@@ -35,7 +35,7 @@ def LyB_to_add(row):
 
 def loading_buffer(row):
     if row["Lysis buffer to add (µL)"] < 0:
-        return sample_volume / (LoB_concentration - 1) 
+        return sample_volume / (LoB_concentration - 1)
     else:
         return ((row["Adjusted conc. (µg/µL)"] * sample_volume) / concentration_samples) / LoB_concentration
 
@@ -50,7 +50,7 @@ def nb_sample(row):
 
 def vol_to_charge(row):
     if row["Lysis buffer to add (µL)"] < 0:
-        return f"All ({row["Total volume (µL)"]})"
+        return f'All ({row["Total volume (µL)"]})'
     else:
         return volume_per_well
     
@@ -121,7 +121,7 @@ volume_per_well = colm3.number_input("**Total volume/well (µL):**",value=30.00,
 concentration_samples = proteins_per_well/volume_per_well if volume_per_well > 0 else proteins_per_well
 colm3.write(f"Concentration of samples: {concentration_samples} µg/µL")
 
-LoB_concentration = colm3.number_input("**Loading buffer conc. (X):**", value=1.00, min_value=0.10, step=0.01, help="e.g. the loading buffer is often in concentration 'X'. If it's 5X then put 5")
+LoB_concentration = colm3.number_input("**Loading buffer conc. (X):**", value=5.00, min_value=2.00, step=0.01, help="e.g. the loading buffer is often in concentration 'X'. If it's 5X then put 5")
 
 st.divider()
 
