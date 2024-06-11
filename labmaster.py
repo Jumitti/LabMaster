@@ -81,11 +81,21 @@ def total_volume_OS(row):
     else: 
         return row["Sample volume (µL)"] + row["Loading buffer (µL)"]
 
+def vol_to_charge_OS(row):
+    if row["Adjusted conc. (µg/µL)"] * sample_volume < proteins_per_well:
+        return "Proteins level too low"
+    elif row["Lysis buffer to add (µL)"] <= 0:
+        return row["Total volume (µL)"]
+    else:
+        return volume_per_well
+
 def nb_sample_OS(row):
-    if row["Lysis buffer to add (µL)"] <= 0:
+    if row["Adjusted conc. (µg/µL)"] * sample_volume < proteins_per_well:
+        return 0
+    elif row["Lysis buffer to add (µL)"] <= 0:
         return 1
     else:
-        return math.floor((sample_volume) / row["Sample volume (µL)"])   
+        return math.floor((sample_volume) / row["Sample volume (µL)"])
 
 local_test = platform.processor()
 
@@ -154,7 +164,7 @@ if not set(required_columns).issubset(mean_samples_table.columns):
 else:
     missing_data = mean_samples_table[mean_samples_table["Sample name"].isnull() | mean_samples_table["Mean (µg/µL)"].isnull()]
     if not missing_data.empty or (mean_samples_table["Mean (µg/µL)"] < 0).any():
-        st.error("Some lines do not concentrations or are negative.")
+        st.error("Some lines do not have concentrations or are negative.")
     else:
         adjusted_samples_table = mean_samples_table.copy()
         adjusted_samples_table["Adjusted conc. (µg/µL)"] = adjusted_samples_table.apply(adjust_concentration, axis=1)
@@ -175,6 +185,7 @@ else:
         one_sample["Lysis buffer to add (µL)"] = one_sample.apply(LyB_to_add_OS, axis=1)
         one_sample["Loading buffer (µL)"] = one_sample.apply(loading_buffer_OS, axis=1)
         one_sample["Total volume (µL)"] = one_sample.apply(total_volume_OS, axis=1)
+        one_sample["Volume to charge (µL)"] = one_sample.apply(vol_to_charge_OS, axis=1)
         one_sample["Nb of samples"] = one_sample.apply(nb_sample_OS, axis=1)
 
         styled_table_OS = one_sample.style.apply(lambda row: ['background-color: red' if row["Nb of samples"] <= 1 else 'background-color: orange' if row["Nb of samples"] == 2 else '' for _ in row], axis=1)
