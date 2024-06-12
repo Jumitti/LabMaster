@@ -25,38 +25,23 @@
 # import time
 #
 # current_directory = os.path.dirname(os.path.abspath(__file__))
-# app_script_path = os.path.join(current_directory, ".", "transfectionratioxpert.py")
+# app_script_path = os.path.join(current_directory, ".", "labmaster.py")
 # requirements_path = os.path.join(current_directory, ".", "requirements.txt")
 #
 # start_messages = [
 #     "------------------------------------------------------------------------------------------------------",
-#     "!                                  Welcome to TransfectionRatioXpert                                 !",
+#     "!                                  Welcome to                                 !",
 #     "------------------------------------------------------------------------------------------------------",
-#     "Transfection Ratio Xpert is a tool designed to simplify the calculation of ratios between DNA and ",
-#     "transfection agents for cellular transfection experiments. This technique is crucial in molecular ",
-#     "biology for introducing nucleic acids into living cells, aiding research in cell biology, biotechnology, ",
-#     "and gene therapy by enabling targeted genetic manipulation.",
+#     "",
 #     "------------------------------------------------------------------------------------------------------",
-#     "Key Points:",
-#     "Cellular Transfection: Essential for introducing DNA or RNA into cells, facilitating research and ",
-#     "development of new therapies.",
-#     "Factors Influencing Efficiency: Type of cells, transfection method, and ratios of nucleic acids to ",
-#     "agents are critical. Common agents include Lipofectamine 2000, Lipofectamine 3000, and jetPRIME.",
-#     "Application Purpose: Simplifies calculating DNA-to-transfection agent ratios, optimizing experiments ",
-#     "with a user-friendly interface and advanced tools.",
+#     "",
 #     "------------------------------------------------------------------------------------------------------",
-#     "Features:",
-#     "Instant preparation of multiple transfection conditions.",
-#     "Support for co-transfection with multiple DNAs.",
-#     "Flexibility to adjust DNA amounts.",
-#     "Selection among Lipofectamine and jetPRIME.",
-#     "Adaptation to various plate formats.",
-#     "Efficient calculation of required wells based on parameters.",
+#     "",
 #     "------------------------------------------------------------------------------------------------------",
-#     "Note: The application assists with calculations but should be verified independently for accuracy.",
+#     "",
 #     "------------------------------------------------------------------------------------------------------",
-#     "Created by Minniti Julien - GitHub(https://github.com/Jumitti/TransfectionRatioXpert)",
-#     "MIT licence(https://github.com/Jumitti/TransfectionRatioXpert/blob/main/LICENSE)"
+#     "Created by Minniti Julien - GitHub(https://github.com/Jumitti/LabMaster)",
+#     "MIT licence(https://github.com/Jumitti/LabMaster/blob/main/LICENSE)"
 #     ]
 # for message in start_messages:
 #     os.system(f"echo {message}")
