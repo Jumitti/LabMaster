@@ -33,6 +33,7 @@ local_test = platform.processor()
 st.set_page_config(page_title="LabMaster", page_icon="🔬", initial_sidebar_state="expanded", layout="wide")
 
 # Main page
+st.logo("img/labmaster_logo.png")
 st.sidebar.title('👩🏼‍🔬 LabMaster')
 st.sidebar.write("Created by Minniti Julien")
 
