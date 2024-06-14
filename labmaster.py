@@ -52,6 +52,7 @@ st.sidebar.divider()
 st.sidebar.page_link("labmaster.py", label="Home")
 st.sidebar.page_link("pages/westernblot.py", label="Western Blot")
 st.sidebar.page_link("pages/transfection.py", label="Transfection")
+st.sidebar.page_link("pages/RT-qPCR.py", label="RT-qPCR")
 
 # MIT licence
 st.sidebar.divider()
@@ -96,4 +97,3 @@ st.markdown(
         '<div style="text-align: justify;">LabMaster is intended to serve as an aid for researchers, providing assistance with common laboratory calculations. While we strive for accuracy, we cannot guarantee that all calculations will be free from errors. Users are advised to double-check critical calculations and use their own scientific judgment in conjunction with this tool.</div>',
         unsafe_allow_html=True)
 st.markdown("")
-
