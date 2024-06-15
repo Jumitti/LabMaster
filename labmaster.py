@@ -23,8 +23,10 @@
 import streamlit as st
 import platform
 import math
+import os
 
 import pandas as pd
+from utils.sidebar import sidebar
 
 
 local_test = platform.processor()
@@ -60,9 +62,6 @@ st.sidebar.link_button('Under MIT licence', 'https://github.com/Jumitti/BlotMast
 
 # Main
 st.markdown("<h3 style='text-align: center; color: black;'>Welcome to LabMaster</h1>", unsafe_allow_html=True)
-st.markdown('')
-
-st.image('img/labmaster_banner.png')
 st.markdown('')
 
 st.markdown('**Overview**')

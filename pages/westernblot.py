@@ -53,6 +53,7 @@ st.sidebar.divider()
 st.sidebar.page_link("labmaster.py", label="Home")
 st.sidebar.page_link("pages/westernblot.py", label="Western Blot")
 st.sidebar.page_link("pages/transfection.py", label="Transfection")
+st.sidebar.page_link("pages/venn_diagram.py", label="Venn diagram")
 
 # MIT licence
 st.sidebar.divider()

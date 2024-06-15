@@ -20,13 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# import os
-# import subprocess
-# import time
-#
-# current_directory = os.path.dirname(os.path.abspath(__file__))
-# app_script_path = os.path.join(current_directory, ".", "labmaster.py")
-# requirements_path = os.path.join(current_directory, ".", "requirements.txt")
+import os
+import subprocess
+import time
+
+current_directory = os.path.dirname(os.path.abspath(__file__))
+app_script_path = os.path.join(current_directory, ".", "labmaster.py")
+requirements_path = os.path.join(current_directory, ".", "requirements.txt")
 #
 # start_messages = [
 #     "------------------------------------------------------------------------------------------------------",
@@ -48,11 +48,9 @@
 #
 # time.sleep(2)
 #
-# update_messages = "Installing/updating python prerequisites..."
-# os.system(f"echo {update_messages}")
-# subprocess.run(["pip", "install", "-r", requirements_path])
-#
-# app_messages = "TransfectionRatioXpert Streamlit app running..."
-# subprocess.run(["streamlit", "run", app_script_path])
+update_messages = "Installing/updating python prerequisites..."
+os.system(f"echo {update_messages}")
+subprocess.run(["pip", "install", "-r", requirements_path])
 
-# WIP
+app_messages = "LabMaster Streamlit app running..."
+subprocess.run(["streamlit", "run", app_script_path])
