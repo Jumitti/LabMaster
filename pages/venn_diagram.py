@@ -11,6 +11,7 @@ import streamlit as st
 from venn import venn, pseudovenn
 
 from utils.page_config import page_config
+import os
 
 
 @st.cache_data(ttl=3600)
@@ -103,6 +104,10 @@ def download_svg():
     return buffer_svg
 
 
+# Example files
+csv_file = os.path.join(os.path.dirname(__file__), '../example', 'example_venn_diagram.csv')
+xlsx_file = os.path.join(os.path.dirname(__file__), '../example', 'example_venn_diagram.xlsx')
+
 # Setting of Venn configurations
 fmt_options = {"Number": "{size}",
                "Percentage": "{percentage:.1f}%",
@@ -184,18 +189,17 @@ with col1:
             st.write('You are by default in **demo** mode.\n'
                      'You can play with VennLit V2 or disable **Try example** on the left **📎 Example** section.\n'
                      'You can also click on **[Help](https://jumitti.notion.site/jumitti/VennLit-V2-e20a373a9c6f4c1390e72a7953ffcb0c)**.')
-        csv_file = 'example/example_venn_diagram.csv'
         snif_delimiter = detect_delimiter(csv_file)
         df = pd.read_csv(csv_file, delimiter=snif_delimiter)
 
     with st.expander("**.csv and .xlsx templates**", expanded=False):
-        with open("example/example_venn_diagram.csv", "rb") as file:  # Download .csv template
+        with open(csv_file, "rb") as file:  # Download .csv template
             st.download_button(
                 label="Download example.csv",
                 data=file,
                 file_name="example_venn_diagram.csv",
                 mime="text/csv")
-        with open("example/example_venn_diagram.xlsx", "rb") as file:  # Download .xlsx template
+        with open(xlsx_file, "rb") as file:  # Download .xlsx template
             st.download_button(
                 label="Download example.xlsx",
                 data=file,
@@ -273,7 +277,7 @@ with col1:
         st.write(
             "Venn diagram with [@tctianchi](https://github.com/tctianchi/pyvenn) and [@LankyCyril](https://github.com/LankyCyril/pyvenn)")
         st.write(
-            "Inspired by [InteractiVenn](http://www.interactivenn.net/) (DOI:[10.1186/s12859-015-0611-3](http://doi.org/10.1186/s12859-015-0611-3)")
+            "Inspired by [InteractiVenn](http://www.interactivenn.net/) (DOI:[10.1186/s12859-015-0611-3](http://doi.org/10.1186/s12859-015-0611-3))")
         st.write("VennLit V2 rebuild and up-to-date by [@Jumitti](https://github.com/Jumitti/vennlit_v2)")
 
 try:

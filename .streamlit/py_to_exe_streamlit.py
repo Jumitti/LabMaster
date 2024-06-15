@@ -27,27 +27,23 @@ import time
 current_directory = os.path.dirname(os.path.abspath(__file__))
 app_script_path = os.path.join(current_directory, "", "labmaster.py")
 requirements_path = os.path.join(current_directory, "", "requirements.txt")
-#
-# start_messages = [
-#     "------------------------------------------------------------------------------------------------------",
-#     "!                                  Welcome to                                 !",
-#     "------------------------------------------------------------------------------------------------------",
-#     "",
-#     "------------------------------------------------------------------------------------------------------",
-#     "",
-#     "------------------------------------------------------------------------------------------------------",
-#     "",
-#     "------------------------------------------------------------------------------------------------------",
-#     "",
-#     "------------------------------------------------------------------------------------------------------",
-#     "Created by Minniti Julien - GitHub(https://github.com/Jumitti/LabMaster)",
-#     "MIT licence(https://github.com/Jumitti/LabMaster/blob/main/LICENSE)"
-#     ]
-# for message in start_messages:
-#     os.system(f"echo {message}")
-#
-# time.sleep(2)
-#
+
+start_messages = [
+    "------------------------------------------------------------------------------------------------------",
+    "!                                        Welcome to LabMaster                                        !",
+    "------------------------------------------------------------------------------------------------------",
+    "LabMaster is designed to streamline and simplify the calculations essential for biological research. ",
+    "Our software currently offers tools for transfection calculations, sample preparation for Western blot ",
+    "analysis, reverse transcription calculations for RNA work, and Venn diagram generation.",
+    "------------------------------------------------------------------------------------------------------",
+    "Created by Minniti Julien - GitHub(https://github.com/Jumitti/LabMaster)",
+    "MIT licence(https://github.com/Jumitti/LabMaster/blob/main/LICENSE)"
+    ]
+for message in start_messages:
+    os.system(f"echo {message}")
+
+time.sleep(2)
+
 update_messages = "Installing/updating python prerequisites..."
 os.system(f"echo {update_messages}")
 subprocess.run(["pip", "install", "-r", requirements_path])
