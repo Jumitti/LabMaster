@@ -19,7 +19,7 @@ This section guides you through submitting an enhancement suggestion for LabMast
 
 - **Ensure the enhancement was not already suggested** by searching on GitHub under [Issues](https://github.com/Jumitti/LabMaster/issues).
 - If you find an open issue addressing the idea, add relevant comments to that issue.
-- If you don't find an open issue, you can [open a new one](https://github.com/your-username/LabMaster/issues/new). Be sure to include a **title and clear description**, as much relevant information as possible, and a **code sample** or **test case** demonstrating the functionality.
+- If you don't find an open issue, you can [open a new one](https://github.com/Jumitti/LabMaster/issues/new). Be sure to include a **title and clear description**, as much relevant information as possible, and a **code sample** or **test case** demonstrating the functionality.
 
 ### Pull Requests
 

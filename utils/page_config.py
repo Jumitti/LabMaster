@@ -20,16 +20,16 @@ def page_config(logo=None, tool_expanded=None, hide_licence=None):
     if logo is True:
         st.sidebar.image(img_path)
     st.sidebar.title('👩🏼‍🔬 LabMaster')
-    st.sidebar.write("Created by Minniti Julien")
+    st.sidebar.write("Created by [Minniti Julien](https://github.com/Jumitti)")
 
     # Button sidebar
     colsb1, colsb2, colsb3 = st.sidebar.columns(3, gap="small")
     colsb1.link_button("Help ⁉", '')
-    colsb2.link_button('GitHub', 'https://github.com/Jumitti/BlotMaster')
+    colsb2.link_button('GitHub', 'https://github.com/Jumitti/LabMaster')
     if local_test == "":
-        colsb3.link_button('Download app 📥', 'https://github.com/Jumitti/BlotMaster/releases')
+        colsb3.link_button('Download app 📥', 'https://github.com/Jumitti/LabMaster/releases')
     else:
-        colsb3.link_button('Web app 🌐', 'https://blotmaster.streamlit.app/')
+        colsb3.link_button('Web app 🌐', 'https://labmaster.streamlit.app/')
 
     # Table
     st.sidebar.divider()
@@ -48,4 +48,4 @@ def page_config(logo=None, tool_expanded=None, hide_licence=None):
 # MIT licence
 def licence():
     st.sidebar.divider()
-    st.sidebar.link_button('Under MIT licence', 'https://github.com/Jumitti/BlotMaster/blob/main/LICENSE')
+    st.sidebar.link_button('Under MIT licence', 'https://github.com/Jumitti/LabMaster/blob/main/LICENSE')

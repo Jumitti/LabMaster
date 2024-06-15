@@ -38,9 +38,21 @@ st.markdown(
         unsafe_allow_html=True)
 st.markdown("")
 
+st.page_link("pages/RT-qPCR.py", label='**Reverse Transcription Calculations**',)
+st.markdown(
+        '<div style="text-align: justify;">Our reverse transcription module provides essential calculations for converting RNA into cDNA. This tool ensures accurate reagent volumes and reaction conditions for efficient reverse transcription, a crucial step in many molecular biology workflows involving RNA.</div>',
+        unsafe_allow_html=True)
+st.markdown("")
+
 st.page_link("pages/transfection.py", label='**Transfection Calculations**',)
 st.markdown(
         '<div style="text-align: justify;">Our transfection module assists researchers in accurately determining the necessary quantities of DNA, reagents, and other components required for efficient and effective transfection. Whether you are working with plasmid DNA, siRNA, or other nucleic acids, LabMaster ensures precise calculations to optimize your experimental outcomes.</div>',
+        unsafe_allow_html=True)
+st.markdown("")
+
+st.page_link("pages/venn_diagram.py", label='**Venn Diagram Generation**',)
+st.markdown(
+        '<div style="text-align: justify;">LabMaster includes a Venn diagram tool for visualizing the overlap between different data sets. This feature is particularly useful for comparing gene or protein expression profiles, identifying common elements, and presenting your data in an easily interpretable format.</div>',
         unsafe_allow_html=True)
 st.markdown("")
 
@@ -63,4 +75,31 @@ st.markdown('**Disclaimer**')
 st.markdown(
         '<div style="text-align: justify;">LabMaster is intended to serve as an aid for researchers, providing assistance with common laboratory calculations. While we strive for accuracy, we cannot guarantee that all calculations will be free from errors. Users are advised to double-check critical calculations and use their own scientific judgment in conjunction with this tool.</div>',
         unsafe_allow_html=True)
+st.markdown("")
+
+st.markdown('**Contributing**')
+st.markdown(
+    '''
+    <div style="text-align: justify;">
+        We welcome contributions from the community! Please read our 
+        <a href="https://github.com/Jumitti/LabMaster/blob/main/CONTRIBUTING.md" target="_blank">contributing guidelines</a> 
+        to get started. Whether you are fixing bugs, adding new features, or 
+        improving documentation, your help is appreciated.
+    </div>
+    ''',
+    unsafe_allow_html=True
+)
+st.markdown("")
+
+st.markdown('**Contact**')
+st.markdown(
+    '''
+    <div style="text-align: justify;">
+        If you have any questions, suggestions, or need support, please reach out to us at 
+        <a href="mailto:minniti@ipmc.cnrs.fr">minniti@ipmc.cnrs.fr</a> or via 
+        <a href="https://github.com/Jumitti/LabMaster/issues">Issues</a>.
+    </div>
+    ''',
+    unsafe_allow_html=True
+)
 st.markdown("")
