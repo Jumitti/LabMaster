@@ -20,44 +20,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import streamlit as st
-import platform
-import math
-
-import pandas as pd
 import io
-import xlsxwriter
+import math
 from datetime import datetime
 
-local_test = platform.processor()
+import pandas as pd
+import streamlit as st
 
-# Settings for Streamlit page
-st.set_page_config(page_title="LabMaster", page_icon="🔬", initial_sidebar_state="expanded", layout="wide")
-
-# Main page
-st.logo("img/labmaster_logo.png")
-st.sidebar.title('👩🏼‍🔬 LabMaster')
-st.sidebar.write("Created by Minniti Julien")
-
-# Button sidebar
-colsb1, colsb2, colsb3 = st.sidebar.columns(3, gap="small")
-colsb1.link_button("Help ⁉", '')
-colsb2.link_button('GitHub', 'https://github.com/Jumitti/BlotMaster')
-if local_test == "":
-    colsb3.link_button('Download app 📥', 'https://github.com/Jumitti/BlotMaster/releases')
-else:
-    colsb3.link_button('Web app 🌐', 'https://blotmaster.streamlit.app/')
-
-# Table
-st.sidebar.divider()
-st.sidebar.page_link("labmaster.py", label="Home")
-st.sidebar.page_link("pages/westernblot.py", label="Western Blot")
-st.sidebar.page_link("pages/transfection.py", label="Transfection")
-st.sidebar.page_link("pages/venn_diagram.py", label="Venn diagram")
-
-# MIT licence
-st.sidebar.divider()
-st.sidebar.link_button('Under MIT licence', 'https://github.com/Jumitti/BlotMaster/blob/main/LICENSE')
+from utils.page_config import page_config
 
 
 # For Master Mix
@@ -174,6 +144,9 @@ def apply_formatting(worksheet, df, red_format, orange_format):
         if cell_format:
             worksheet.set_row(row_num, None, cell_format)
 
+
+# Page config
+page_config()
 
 # Sample table
 colm1, colm2, colm3, colm4 = st.columns([1, 0.5, 1, 1], gap="small")

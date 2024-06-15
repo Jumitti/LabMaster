@@ -1,14 +1,16 @@
+import csv
 import io
 from io import BytesIO
 from itertools import combinations
 from zipfile import ZipFile
+
+import chardet
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 from venn import venn, pseudovenn
-import chardet
-import csv
-import platform
+
+from utils.page_config import page_config
 
 
 @st.cache_data(ttl=3600)
@@ -158,35 +160,8 @@ legend_loc_options = {'Best': 'best',
                       'Center Left': 'center left',
                       'Center': 'center'}
 
-local_test = platform.processor()
-
-# Settings for Streamlit page
-st.set_page_config(page_title="LabMaster", page_icon="🔬", initial_sidebar_state="expanded", layout="wide")
-
-# Main page
-st.logo("img/labmaster_logo.png")
-st.sidebar.title('👩🏼‍🔬 LabMaster')
-st.sidebar.write("Created by Minniti Julien")
-
-# Button sidebar
-colsb1, colsb2, colsb3 = st.sidebar.columns(3, gap="small")
-colsb1.link_button("Help ⁉", '')
-colsb2.link_button('GitHub', 'https://github.com/Jumitti/BlotMaster')
-if local_test == "":
-    colsb3.link_button('Download app 📥', 'https://github.com/Jumitti/BlotMaster/releases')
-else:
-    colsb3.link_button('Web app 🌐', 'https://blotmaster.streamlit.app/')
-
-# Table
-st.sidebar.divider()
-st.sidebar.page_link("labmaster.py", label="Home")
-st.sidebar.page_link("pages/westernblot.py", label="Western Blot")
-st.sidebar.page_link("pages/transfection.py", label="Transfection")
-st.sidebar.page_link("pages/venn_diagram.py", label="Venn diagram")
-
-# MIT licence
-st.sidebar.divider()
-st.sidebar.link_button('Under MIT licence', 'https://github.com/Jumitti/BlotMaster/blob/main/LICENSE')
+# Page config
+page_config()
 
 # Main page
 st.title('⭕ VennLit V2')

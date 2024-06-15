@@ -21,13 +21,12 @@
 # SOFTWARE.
 
 import io
-import platform
 from datetime import datetime
 
 import pandas as pd
 import streamlit as st
 
-local_test = platform.processor()
+from utils.page_config import page_config, licence
 
 culture_vessel_options_lipo = {"96-well": 5, "24-well": 25, "12-well": 50, "6-well/35-mm": 125,
                                "60-mm/flask 25 cm2": 250, "10-cm/flask 75 cm2": 500, "15-cm/flask 175cm2": 750}
@@ -36,31 +35,8 @@ culture_vessel_options_jetprime = {"96-well": 5, "24-well": 50, "12-well": 75, "
 calcul = []
 calcul_j = []
 
-local_test = platform.processor()
-
-# Settings for Streamlit page
-st.set_page_config(page_title="LabMaster", page_icon="🔬", initial_sidebar_state="expanded", layout="wide")
-
-# Main page
-st.logo("img/labmaster_logo.png")
-st.sidebar.title('👩🏼‍🔬 LabMaster')
-st.sidebar.write("Created by Minniti Julien")
-
-# Button sidebar
-colsb1, colsb2, colsb3 = st.sidebar.columns(3, gap="small")
-colsb1.link_button("Help ⁉", '')
-colsb2.link_button('GitHub', 'https://github.com/Jumitti/BlotMaster')
-if local_test == "":
-    colsb3.link_button('Download app 📥', 'https://github.com/Jumitti/BlotMaster/releases')
-else:
-    colsb3.link_button('Web app 🌐', 'https://blotmaster.streamlit.app/')
-
-# Table
-st.sidebar.divider()
-st.sidebar.page_link("labmaster.py", label="Home")
-st.sidebar.page_link("pages/westernblot.py", label="Western Blot")
-st.sidebar.page_link("pages/transfection.py", label="Transfection")
-st.sidebar.page_link("pages/venn_diagram.py", label="Venn diagram")
+# Page_config
+page_config(tool_expanded=False, hide_licence=True)
 
 # Settings for all transfection
 st.sidebar.divider()
@@ -145,8 +121,7 @@ if numbers_wells_for_all:
                                            key=f"number_well")
 
 # MIT licence
-st.sidebar.divider()
-st.sidebar.link_button('Under MIT licence', 'https://github.com/Jumitti/BlotMaster/blob/main/LICENSE')
+licence()
 
 columns = st.columns(num_columns)
 

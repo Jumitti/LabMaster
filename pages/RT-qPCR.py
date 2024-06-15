@@ -20,15 +20,13 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import streamlit as st
-import platform
-import math
-
 import pandas as pd
+import streamlit as st
 
+from utils.page_config import page_config
 
-# Settings for Streamlit page
-st.set_page_config(page_title="LabMaster", page_icon="🔬", initial_sidebar_state="expanded", layout="wide")
+# Page config
+page_config()
 
 # Sample table
 colm1, colm2, colm3, colm4 = st.columns([1, 0.5, 1, 1], gap="small")
