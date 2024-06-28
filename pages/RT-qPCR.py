@@ -36,25 +36,27 @@ initial_data = [
     {"Sample name": "WT_1", "Conc. 1 (ng/µL)": 253.5, "Conc. 2 (ng/µL)": 256},
     {"Sample name": "KO_1", "Conc. 1 (ng/µL)": 300, "Conc. 2 (ng/µL)": 302.2}
 ]
-samples_table = pd.DataFrame(initial_data)
-mean_samples_table = colm1.data_editor(samples_table if 'rna_save' not in st.session_state
-                                       else st.session_state.rna_save[
-    ["Sample name", "Conc. 1 (ng/µL)", "Conc. 2 (ng/µL)"]],
-                                       num_rows="dynamic", hide_index=True)
-st.session_state['rna_samples_table_save'] = samples_table
 
-if "Conc. 1 (ng/µL)" in mean_samples_table.columns and "Conc. 2 (ng/µL)" in mean_samples_table.columns:
-    mean_samples_table["Mean (ng/µL)"] = mean_samples_table[["Conc. 1 (ng/µL)", "Conc. 2 (ng/µL)"]].mean(axis=1)
-elif "Conc. 1 (ng/µL)" in mean_samples_table.columns:
-    mean_samples_table["Mean (ng/µL)"] = mean_samples_table["Conc. 1 (ng/µL)"].mean(axis=1)
-elif "Conc. 2 (ng/µL)" in mean_samples_table.columns:
-    mean_samples_table["Mean (ng/µL)"] = mean_samples_table["Conc. 2 (ng/µL)"].mean(axis=1)
+if "samples_table_rna" not in st.session_state:
+    st.session_state["samples_table_rna"] = pd.DataFrame(initial_data)
+
+samples_table = colm1.data_editor(st.session_state["samples_table_rna"],
+                                       num_rows="dynamic", hide_index=True)
+
+if colm1.button("Save"):
+    st.session_state["samples_table_rna"] = samples_table
+
+if "Conc. 1 (ng/µL)" in samples_table.columns and "Conc. 2 (ng/µL)" in samples_table.columns:
+    samples_table["Mean (ng/µL)"] = samples_table[["Conc. 1 (ng/µL)", "Conc. 2 (ng/µL)"]].mean(axis=1)
+elif "Conc. 1 (ng/µL)" in samples_table.columns:
+    samples_table["Mean (ng/µL)"] = samples_table["Conc. 1 (ng/µL)"].mean(axis=1)
+elif "Conc. 2 (ng/µL)" in samples_table.columns:
+    samples_table["Mean (ng/µL)"] = samples_table["Conc. 2 (ng/µL)"].mean(axis=1)
 else:
-    mean_samples_table["Mean (ng/µL)"] = 0
+    samples_table["Mean (ng/µL)"] = 0
 
 colm2.write("**Summary and samples average**")
-st.session_state["rna_save"] = mean_samples_table
-mean_samples_table = mean_samples_table[["Sample name", "Mean (ng/µL)"]]
+mean_samples_table = samples_table[["Sample name", "Mean (ng/µL)"]]
 colm2.dataframe(mean_samples_table, hide_index=True)
 
 colm3.write("**Samples preparation**")
