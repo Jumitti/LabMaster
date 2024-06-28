@@ -156,25 +156,29 @@ initial_data = [
     {"Sample name": "WT_1", "Conc. 1 (µg/µL)": 1.5, "Conc. 2 (µg/µL)": 2},
     {"Sample name": "KO_1", "Conc. 1 (µg/µL)": 2, "Conc. 2 (µg/µL)": 3}
 ]
-samples_table = pd.DataFrame(initial_data)
-mean_samples_table = colm1.data_editor(samples_table if 'save' not in st.session_state
-                                       else st.session_state.save[
-    ["Sample name", "Conc. 1 (µg/µL)", "Conc. 2 (µg/µL)"]],
-                                       num_rows="dynamic", hide_index=True)
-st.session_state['samples_table_save'] = samples_table
+if "samples_table" not in st.session_state:
+    st.session_state["samples_table"] = pd.DataFrame(initial_data)
 
-if "Conc. 1 (µg/µL)" in mean_samples_table.columns and "Conc. 2 (µg/µL)" in mean_samples_table.columns:
-    mean_samples_table["Mean (µg/µL)"] = mean_samples_table[["Conc. 1 (µg/µL)", "Conc. 2 (µg/µL)"]].mean(axis=1)
-elif "Conc. 1 (µg/µL)" in mean_samples_table.columns:
-    mean_samples_table["Mean (µg/µL)"] = mean_samples_table["Conc. 1 (µg/µL)"].mean(axis=1)
-elif "Conc. 2 (µg/µL)" in mean_samples_table.columns:
-    mean_samples_table["Mean (µg/µL)"] = mean_samples_table["Conc. 2 (µg/µL)"].mean(axis=1)
+samples_table = colm1.data_editor(
+    st.session_state["samples_table"],
+    num_rows="dynamic",
+    hide_index=True
+)
+
+if colm1.button("Save"):
+    st.session_state["samples_table"] = samples_table
+
+if "Conc. 1 (µg/µL)" in samples_table.columns and "Conc. 2 (µg/µL)" in samples_table.columns:
+    samples_table["Mean (µg/µL)"] = samples_table[["Conc. 1 (µg/µL)", "Conc. 2 (µg/µL)"]].mean(axis=1)
+elif "Conc. 1 (µg/µL)" in samples_table.columns:
+    samples_table["Mean (µg/µL)"] = samples_table["Conc. 1 (µg/µL)"]
+elif "Conc. 2 (µg/µL)" in samples_table.columns:
+    samples_table["Mean (µg/µL)"] = samples_table["Conc. 2 (µg/µL)"]
 else:
-    mean_samples_table["Mean (µg/µL)"] = 0
+    samples_table["Mean (µg/µL)"] = 0
 
 colm2.write("**Summary and samples average**")
-st.session_state["save"] = mean_samples_table
-mean_samples_table = mean_samples_table[["Sample name", "Mean (µg/µL)"]]
+mean_samples_table = samples_table[["Sample name", "Mean (µg/µL)"]]
 colm2.dataframe(mean_samples_table, hide_index=True)
 
 # Settings
@@ -218,7 +222,7 @@ if not set(required_columns).issubset(mean_samples_table.columns):
 else:
     missing_data = mean_samples_table[
         mean_samples_table["Sample name"].isnull() | mean_samples_table["Mean (µg/µL)"].isnull()]
-    if not missing_data.empty or (mean_samples_table["Mean (µg/µL)"] < 0).any():
+    if not missing_data.empty or (mean_samples_table["Mean (µg/µL)"] <= 0).any():
         st.error("Some lines do not have concentrations or are negative.")
     else:
         adjusted_samples_table = mean_samples_table.copy()
