@@ -149,6 +149,8 @@ def get_enzyme_data():
 # Page config
 page_config()
 
+st.warning('⚠️ This is a DEMO still in testing... Enzymes are from NEB database')
+
 enzymes = get_enzyme_data()
 
 enzymes_df = pd.DataFrame(enzymes)
