@@ -58,7 +58,7 @@ def display_table(db="NEB"):
 
 def select_enzyme(enzymes, db="NEB"):
     st.divider()
-    selected_names = st.multiselect("Enzymes", [enzyme['Enzyme'] for enzyme in enzymes])
+    selected_names = st.multiselect("Select enzymes", [enzyme['Enzyme'] for enzyme in enzymes])
     if selected_names:
         selected_enzymes = [enzyme for enzyme in enzymes if enzyme['Enzyme'] in selected_names]
         enzymes_df = pd.DataFrame(selected_enzymes)
@@ -85,9 +85,9 @@ def digestion_protocols(enzymes, db="NEB"):
     st.divider()
     col1dp, col2dp, col3dp = st.columns(3, gap="small")
     dna_reaction = col1dp.number_input("DNA per reaction (ng)", value=1000.00, step=0.01, min_value=0.00,
-                                   key=f"{db}_dna_reaction")
+                                       key=f"{db}_dna_reaction")
     dna_conc = col2dp.number_input("DNA concentration (ng/µL)", value=100.00, step=0.01, min_value=0.00,
-                               key=f"{db}_dna_concentration")
+                                   key=f"{db}_dna_concentration")
     samples = col3dp.number_input("DNA per reaction (ng)", value=2, step=1, min_value=1, key=f"{db}_samples")
 
     if db == "NEB":
@@ -102,7 +102,8 @@ def digestion_protocols(enzymes, db="NEB"):
                                 f"For {samples} reactions (µL)": samples * 1,
                                 'NEBuffer r1.1': enzyme['NEBuffer r1.1'], 'NEBuffer r2.1': enzyme['NEBuffer r2.1'],
                                 'NEBuffer r3.1': enzyme['NEBuffer r3.1'],
-                                'rCutSmart': enzyme['rCutSmart']} for enzyme in enzymes
+                                'rCutSmart': enzyme['rCutSmart'], 'TimeSaver': enzyme['TimeSaver']} for enzyme in
+                               enzymes
                            ] + [
                                {"Component": f"H2O (μL)",
                                 "For 1 reaction (µL)": 50 - len(enzymes) - 5 - dna_reaction / dna_conc,
@@ -150,12 +151,77 @@ def digestion_protocols(enzymes, db="NEB"):
                                         20 - len(enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc))}]
 
     df = pd.DataFrame(protocols_output)
-    st.dataframe(df.style.map(
+    colr1, colr2 = st.columns([2, 1], gap="small")
+    colr1.dataframe(df.style.map(
         highlight_buffer, subset=['NEBuffer r1.1', 'NEBuffer r2.1', 'NEBuffer r3.1', 'rCutSmart'] if
         db == "NEB" else ['Buffer A', 'Buffer B', 'Buffer C', 'Buffer D', 'Buffer E', 'Buffer F', 'Buffer G',
                           'Buffer H', 'Buffer J', 'Buffer K', 'Buffer MultiCore']).apply(
         lambda x: highlight_row(x, db) if x.name in [len(df) - 2, len(df) - 1] else [''] * len(x),
         axis=1), hide_index=True, key=f"{db}_proto")
+
+    if db == "NEB":
+        colr2.write("**Protocol**")
+        colr2.write("**1.** Prepare mix.")
+        df_selected = pd.DataFrame(enzymes)
+
+        unique_temps = df_selected['Incubation Temp (°C)'].unique()
+        timesave = True if df_selected['TimeSaver'].eq('✅').all() else False
+
+        if len(unique_temps) == 1:
+            colr2.write(f"**2.** Incubate at {unique_temps[0]}°C for {'10min' if timesave is True else '1h'}")
+        else:
+            colr2.write(f"**2.** Incubation")
+            colr2.warning(
+                "Selected enzymes have different incubation temperatures. Please choose the appropriate temperature for each enzyme:")
+            for temp in unique_temps:
+                enzymes_with_temp = df_selected[df_selected['Incubation Temp (°C)'] == temp]['Enzyme'].tolist()
+                colr2.write(f"Enzymes with {temp}°C: {', '.join(enzymes_with_temp)}")
+        if timesave is False:
+            colr2.warning("Some enzymes are not TimeSaver, so we recommend leaving 1 hour or more.")
+        else:
+            colr2.warning("Even though TimeSaver enzymes are very practical, don't hesitate to add incubation time if necessary.")
+
+        max_heatInactivationTemp = df_selected['heatInactivationTemp'].max()
+        max_heatInactivationTime = df_selected['heatInactivationTime'].max()
+        if int(max_heatInactivationTemp) > 0:
+            colr2.write(
+                f"**3.** Inactivate at {max_heatInactivationTemp}°C for {max_heatInactivationTime}min")
+            colr2.warning("In my experience, with NEB, if enzymes have different inactivation temperatures and times, it is preferable to use the highest temperature and the longest time.")
+
+        if (df_selected['heatInactivationTemp'] == "0").any():
+            colr2.write("**4.** Certain enzymes do not inactivate. A gel purification is required.")
+        else:
+            colr2.warning("**3. bonus** Gel purification never hurts")
+    else:
+        colr2.write("**Protocol**")
+        colr2.write("**1.** Prepare mix.")
+        df_selected = pd.DataFrame(enzymes)
+
+        unique_temps = df_selected['Incubation Temp (°C)'].unique()
+
+        if len(unique_temps) == 1:
+            colr2.write(f"**2.** Incubate at {unique_temps[0]}°C for 1h")
+        else:
+            colr2.write(f"**2.** Incubation")
+            colr2.warning(
+                "Selected enzymes have different incubation temperatures. Please choose the appropriate temperature for each enzyme:")
+            for temp in unique_temps:
+                enzymes_with_temp = df_selected[df_selected['Incubation Temp (°C)'] == temp]['Enzyme'].tolist()
+                colr2.write(f"- Enzymes with {temp}°C: {', '.join(enzymes_with_temp)}")
+        colr2.warning("Don't hesitate to add incubation time if necessary.")
+
+        heatinactivation = True if df_selected['Heat Inactivation'].eq('✅').all() else False
+        if heatinactivation is True:
+            colr2.write(
+                f"**3.** Inactivate at 65°C for 15min")
+            colr2.warning(
+                "Don't hesitate to add incubation time if necessary. And gel purification never hurts")
+        else:
+            colr2.write("**3.** Certain enzymes do not inactivate or will damage your DNA. A gel purification is required.")
+            non_inactivating_enzymes = df_selected[df_selected['Heat Inactivation'].ne('✅')]
+
+            for idx, enzyme_row in non_inactivating_enzymes.iterrows():
+                colr2.write(f"- {enzyme_row['Enzyme']}: Heat Inactivation status - {enzyme_row['Heat Inactivation']}")
 
 
 def highlight_buffer(val):
