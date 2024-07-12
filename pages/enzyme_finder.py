@@ -57,6 +57,7 @@ def display_table(db="NEB"):
 
 
 def select_enzyme(enzymes, db="NEB"):
+    st.divider()
     selected_names = st.multiselect("Enzymes", [enzyme['Enzyme'] for enzyme in enzymes])
     if selected_names:
         selected_enzymes = [enzyme for enzyme in enzymes if enzyme['Enzyme'] in selected_names]
@@ -81,11 +82,13 @@ def select_enzyme(enzymes, db="NEB"):
 
 
 def digestion_protocols(enzymes, db="NEB"):
-    dna_reaction = st.number_input("DNA per reaction (ng)", value=1000.00, step=0.01, min_value=0.00,
+    st.divider()
+    col1dp, col2dp, col3dp = st.columns(3, gap="small")
+    dna_reaction = col1dp.number_input("DNA per reaction (ng)", value=1000.00, step=0.01, min_value=0.00,
                                    key=f"{db}_dna_reaction")
-    dna_conc = st.number_input("DNA concentration (ng/µL)", value=100.00, step=0.01, min_value=0.00,
+    dna_conc = col2dp.number_input("DNA concentration (ng/µL)", value=100.00, step=0.01, min_value=0.00,
                                key=f"{db}_dna_concentration")
-    samples = st.number_input("DNA per reaction (ng)", value=2, step=1, min_value=1, key=f"{db}_samples")
+    samples = col3dp.number_input("DNA per reaction (ng)", value=2, step=1, min_value=1, key=f"{db}_samples")
 
     if db == "NEB":
         protocols_output = [
@@ -99,28 +102,60 @@ def digestion_protocols(enzymes, db="NEB"):
                                 f"For {samples} reactions (µL)": samples * 1,
                                 'NEBuffer r1.1': enzyme['NEBuffer r1.1'], 'NEBuffer r2.1': enzyme['NEBuffer r2.1'],
                                 'NEBuffer r3.1': enzyme['NEBuffer r3.1'],
-                                'rCutSmart': enzyme['rCutSmart']} for enzyme in enzymes]
+                                'rCutSmart': enzyme['rCutSmart']} for enzyme in enzymes
+                           ] + [
+                               {"Component": f"H2O (μL)",
+                                "For 1 reaction (µL)": 50 - len(enzymes) - 5 - dna_reaction / dna_conc,
+                                f"For {samples} reactions (µL)": samples * (
+                                        50 - samples * len(enzymes) - 5 - dna_reaction / dna_conc)},
+                               {"Component": "Total (µL)", "For 1 reaction (µL)": 50 if 50 - len(
+                                   enzymes) - 5 - dna_reaction / dna_conc >= 0 else 50 - (
+                                       50 - len(enzymes) - 5 - dna_reaction / dna_conc),
+                                f"For {samples} reactions (µL)": samples * 50 if 50 - len(
+                                    enzymes) - 5 - dna_reaction / dna_conc >= 0 else samples * (
+                                        50 - (50 - len(enzymes) - 5 - dna_reaction / dna_conc))}]
     if db == "PROMEGA":
+        vol_enz = 1 if len(enzymes) > 1 else 2
         protocols_output = [
                                {"Component": f"DNA ({dna_reaction / 1000}µg)",
                                 "For 1 reaction (µL)": dna_reaction / dna_conc,
                                 f"For {samples} reactions (µL)": samples * dna_reaction / dna_conc},
-                               {"Component": "Buffer (µL)", "For 1 reaction (µL)": 5,
-                                f"For {samples} reactions (µL)": samples * 5}
+                               {"Component": "Buffer (µL)", "For 1 reaction (µL)": 2,
+                                f"For {samples} reactions (µL)": samples * 2},
+                               {"Component": "BSA 10X (µL)", "For 1 reaction (µL)": 2,
+                                f"For {samples} reactions (µL)": samples * 2}
                            ] + [
-                               {"Component": f"{enzyme['Enzyme']} (µL)", "For 1 reaction (µL)": 1,
-                                f"For {samples} reactions (µL)": samples * 1,
-                                'Buffer A': f"{enzyme['Buffer A']}", 'Buffer B': f"{enzyme['Buffer B']}", 'Buffer C': f"{enzyme['Buffer C']}",
-                                'Buffer D': f"{enzyme['Buffer D']}", 'Buffer E': f"{enzyme['Buffer E']}", 'Buffer F': f"{enzyme['Buffer F']}",
-                                'Buffer G': f"{enzyme['Buffer G']}", 'Buffer H': f"{enzyme['Buffer H']}", 'Buffer J': f"{enzyme['Buffer J']}",
-                                'Buffer K': f"{enzyme['Buffer K']}", 'Buffer MultiCore': f"{enzyme['Buffer MultiCore']}",
-                                } for enzyme in enzymes]
+                               {"Component": f"{enzyme['Enzyme']} (µL)", "For 1 reaction (µL)": vol_enz,
+                                f"For {samples} reactions (µL)": samples * vol_enz,
+                                'Buffer A': f"{enzyme['Buffer A']}", 'Buffer B': f"{enzyme['Buffer B']}",
+                                'Buffer C': f"{enzyme['Buffer C']}",
+                                'Buffer D': f"{enzyme['Buffer D']}", 'Buffer E': f"{enzyme['Buffer E']}",
+                                'Buffer F': f"{enzyme['Buffer F']}",
+                                'Buffer G': f"{enzyme['Buffer G']}", 'Buffer H': f"{enzyme['Buffer H']}",
+                                'Buffer J': f"{enzyme['Buffer J']}",
+                                'Buffer K': f"{enzyme['Buffer K']}",
+                                'Buffer MultiCore': f"{enzyme['Buffer MultiCore']}",
+                                } for enzyme in enzymes
+                           ] + [
+                               {"Component": f"H2O (μL)",
+                                "For 1 reaction (µL)": 20 - len(enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc,
+                                f"For {samples} reactions (µL)": samples * (
+                                        20 - samples * len(enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc)},
+                               {"Component": "Total (µL)",
+                                "For 1 reaction (µL)": 20 if 20 - len(
+                                    enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc >= 0 else 20 - (
+                                        20 - len(enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc),
+                                f"For {samples} reactions (µL)": samples * 20 if 20 - len(
+                                    enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc >= 0 else samples * (20 - (
+                                        20 - len(enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc))}]
 
     df = pd.DataFrame(protocols_output)
     st.dataframe(df.style.map(
         highlight_buffer, subset=['NEBuffer r1.1', 'NEBuffer r2.1', 'NEBuffer r3.1', 'rCutSmart'] if
         db == "NEB" else ['Buffer A', 'Buffer B', 'Buffer C', 'Buffer D', 'Buffer E', 'Buffer F', 'Buffer G',
-                          'Buffer H', 'Buffer J', 'Buffer K', 'Buffer MultiCore']), hide_index=True, key=f"{db}_proto")
+                          'Buffer H', 'Buffer J', 'Buffer K', 'Buffer MultiCore']).apply(
+        lambda x: highlight_row(x, db) if x.name in [len(df) - 2, len(df) - 1] else [''] * len(x),
+        axis=1), hide_index=True, key=f"{db}_proto")
 
 
 def highlight_buffer(val):
@@ -143,10 +178,16 @@ def highlight_buffer(val):
     return color
 
 
+def highlight_row(s, db="NEB"):
+    vol_tol = 50 if db == "NEB" else 20
+    if s.iloc[1] > vol_tol or s.iloc[1] < 0:
+        return ['background-color: red'] * len(s)
+    else:
+        return [''] * len(s)
+
+
 # Page config
 page_config()
-
-st.warning('⚠️ This is a DEMO still in testing... Enzymes are from NEB database')
 
 NEBtab, PROMEGAtab = st.tabs(["NEB", "Promega"])
 
