@@ -35,7 +35,7 @@ def page_config(logo=None, tool_expanded=None, hide_licence=None):
     st.sidebar.divider()
     st.sidebar.page_link("labmaster.py", label="**Home**", icon="🏠")
     with st.sidebar.expander("Tools", expanded=True if tool_expanded is not False else False):
-        st.page_link("pages/enzyme_finder.py", label="Enzymes")
+        st.page_link("pages/restriction_enzyme.py", label="Restriction Enzymes")
         st.page_link("pages/RT-qPCR.py", label="RT-qPCR")
         st.page_link("pages/transfection.py", label="Transfection")
         st.page_link("pages/venn_diagram.py", label="Venn diagram")

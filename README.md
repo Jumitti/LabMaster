@@ -2,7 +2,11 @@
 
 ## Overview
 
-LabMaster is designed to streamline and simplify the calculations essential for biological research. Our software currently offers tools for transfection calculations, sample preparation for Western blot analysis, reverse transcription calculations for RNA work, and Venn diagram generation. Here is a brief overview of the features:
+LabMaster is designed to streamline and simplify the calculations essential for biological research. Our software currently offers tools for transfection calculations, sample preparation for Western blot analysis, reverse transcription calculations for RNA work, Venn diagram generation, and now includes a Restriction Enzymes tool. Here is a brief overview of the features:
+
+### Restriction Enzymes
+
+With the Restriction Enzymes tool, you can view the specificity of enzymes from NEB and Promega (please note, we are not affiliated with these companies) and generate an enzymatic digestion protocol for molecular biology. This tool helps you determine the best conditions for your restriction enzyme digests, ensuring accurate and reproducible results in your cloning and molecular biology experiments.
 
 ### Reverse Transcription Calculations
 
