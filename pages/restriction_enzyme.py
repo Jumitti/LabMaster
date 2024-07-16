@@ -34,7 +34,7 @@ def display_table(db="NEB"):
 
     if db == "NEB":
         enzymes_df = enzymes_df[enzymes_df['Sold by NEB'] == "✅"]
-        HF_only = st.toggle("Show HF NEB Enzymes Only", value=False, key="HF")
+        HF_only = st.toggle("Show HF NEB Enzymes Only", value=False, key="HF", help="For over 45 years, New England Biolabs has been developing innovative solutions for molecular biology applications. The respected leader in the field of restriction enzyme biology, NEB has developed a line of High-Fidelity (HF®) Restriction Enzymes. These engineered enzymes have the same specificity as the native enzyme, with the added benefit of reduced star activity, rapid digestion (5-15 minutes) and 100% activity in rCutSmart™ and CutSmart® Buffer.\n\nEngineered with performance in mind, HF restriction enzymes are fully active under a broader range of conditions, minimizing off-target products, while offering flexibility in experimental design.")
         if HF_only:
             enzymes_df = enzymes_df[enzymes_df['HF version'] == "Yes"]
         columns_to_exclude = ['Type', "Subtype", 'heatInactivationTemp', 'heatInactivationTime', 'ATP', 'BSA', 'DTT',
@@ -51,7 +51,7 @@ def display_table(db="NEB"):
                           'Buffer H',
                           'Buffer J', 'Buffer K', 'Buffer MultiCore']), column_config={
         "url": st.column_config.LinkColumn("URL")}, hide_index=True, key=f"{db}_dataframe")
-    st.write(f"**{len(enzymes_df_filtered)}** enzymes available", key=f"{db}_nb_enz")
+    st.write(f"**{len(enzymes_df_filtered)}** enzymes available. Buffers are in percentage of **effectiveness** - if there is **a *(star)**, the enzyme has **star** activity in this buffer." + " NEB has **TimeSaver** enzymes which digest in **5-15 minutes**." if db == "NEB" else "")
 
     return enzymes
 
