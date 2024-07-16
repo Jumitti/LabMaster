@@ -34,7 +34,8 @@ def display_table(db="NEB"):
 
     if db == "NEB":
         enzymes_df = enzymes_df[enzymes_df['Sold by NEB'] == "✅"]
-        HF_only = st.toggle("Show HF NEB Enzymes Only", value=False, key="HF", help="For over 45 years, New England Biolabs has been developing innovative solutions for molecular biology applications. The respected leader in the field of restriction enzyme biology, NEB has developed a line of High-Fidelity (HF®) Restriction Enzymes. These engineered enzymes have the same specificity as the native enzyme, with the added benefit of reduced star activity, rapid digestion (5-15 minutes) and 100% activity in rCutSmart™ and CutSmart® Buffer.\n\nEngineered with performance in mind, HF restriction enzymes are fully active under a broader range of conditions, minimizing off-target products, while offering flexibility in experimental design.")
+        HF_only = st.toggle("Show HF NEB Enzymes Only", value=False, key="HF",
+                            help="For over 45 years, New England Biolabs has been developing innovative solutions for molecular biology applications. The respected leader in the field of restriction enzyme biology, NEB has developed a line of High-Fidelity (HF®) Restriction Enzymes. These engineered enzymes have the same specificity as the native enzyme, with the added benefit of reduced star activity, rapid digestion (5-15 minutes) and 100% activity in rCutSmart™ and CutSmart® Buffer.\n\nEngineered with performance in mind, HF restriction enzymes are fully active under a broader range of conditions, minimizing off-target products, while offering flexibility in experimental design.")
         if HF_only:
             enzymes_df = enzymes_df[enzymes_df['HF version'] == "Yes"]
         columns_to_exclude = ['Type', "Subtype", 'heatInactivationTemp', 'heatInactivationTime', 'ATP', 'BSA', 'DTT',
@@ -48,10 +49,9 @@ def display_table(db="NEB"):
     st.dataframe(enzymes_df_filtered.sort_values(by='Enzyme').style.map(
         highlight_buffer, subset=['NEBuffer r1.1', 'NEBuffer r2.1', 'NEBuffer r3.1', 'rCutSmart'] if
         db == "NEB" else ['Buffer A', 'Buffer B', 'Buffer C', 'Buffer D', 'Buffer E', 'Buffer F', 'Buffer G',
-                          'Buffer H',
-                          'Buffer J', 'Buffer K', 'Buffer MultiCore']), column_config={
-        "url": st.column_config.LinkColumn("URL")}, hide_index=True, key=f"{db}_dataframe")
-    st.write(f"**{len(enzymes_df_filtered)}** enzymes available. Buffers are in percentage of **effectiveness** - if there is **a *(star)**, the enzyme has **star** activity in this buffer." + " NEB has **TimeSaver** enzymes which digest in **5-15 minutes**." if db == "NEB" else "")
+                          'Buffer H', 'Buffer J', 'Buffer K', 'Buffer MultiCore']), column_config={"url": st.column_config.LinkColumn("URL")}, hide_index=True, key=f"{db}_dataframe")
+    st.write(
+        f"**{len(enzymes_df_filtered)}** enzymes available | Buffers are in percentage of **effectiveness** - if there is **a *(star)**, the enzyme has **star** activity in this buffer. {' | NEB has **TimeSaver** enzymes which digest in **5-15 minutes**.' if db == 'NEB' else ''}")
 
     return enzymes
 
@@ -179,14 +179,16 @@ def digestion_protocols(enzymes, db="NEB"):
         if timesave is False:
             colr2.warning("Some enzymes are not TimeSaver, so we recommend leaving 1 hour or more.")
         else:
-            colr2.warning("Even though TimeSaver enzymes are very practical, don't hesitate to add incubation time if necessary.")
+            colr2.warning(
+                "Even though TimeSaver enzymes are very practical, don't hesitate to add incubation time if necessary.")
 
         max_heatInactivationTemp = df_selected['heatInactivationTemp'].max()
         max_heatInactivationTime = df_selected['heatInactivationTime'].max()
         if int(max_heatInactivationTemp) > 0:
             colr2.write(
                 f"**3.** Inactivate at {max_heatInactivationTemp}°C for {max_heatInactivationTime}min")
-            colr2.warning("In my experience, with NEB, if enzymes have different inactivation temperatures and times, it is preferable to use the highest temperature and the longest time.")
+            colr2.warning(
+                "In my experience, with NEB, if enzymes have different inactivation temperatures and times, it is preferable to use the highest temperature and the longest time.")
 
         if (df_selected['heatInactivationTemp'] == "0").any():
             colr2.write("**4.** Certain enzymes do not inactivate. A gel purification is required.")
@@ -217,7 +219,8 @@ def digestion_protocols(enzymes, db="NEB"):
             colr2.warning(
                 "Don't hesitate to add incubation time if necessary. And gel purification never hurts")
         else:
-            colr2.write("**3.** Certain enzymes do not inactivate or will damage your DNA. A gel purification is required.")
+            colr2.write(
+                "**3.** Certain enzymes do not inactivate or will damage your DNA. A gel purification is required.")
             non_inactivating_enzymes = df_selected[df_selected['Heat Inactivation'].ne('✅')]
 
             for idx, enzyme_row in non_inactivating_enzymes.iterrows():
