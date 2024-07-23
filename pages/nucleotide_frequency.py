@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
 import altair as alt
+from utils.page_config import page_config
 
 # Fonction pour calculer les fréquences des nucléotides tous les 5 nucléotides
-def calculate_frequencies(sequence, window_size=50):
+def calculate_frequencies(sequence, window_size):
     frequencies = []
     for i in range(0, len(sequence), window_size):
         window = sequence[i:i + window_size]
@@ -17,12 +18,16 @@ def calculate_frequencies(sequence, window_size=50):
             })
     return pd.DataFrame(frequencies)
 
+# Page config
+page_config()
+
 # Configuration de Streamlit
 st.title("Visualisation de Séquence en Ruban")
 sequence = st.text_input("Entrez la séquence", "ATGCGCATGCGC")
 
 # Calcul des fréquences
-frequencies = calculate_frequencies(sequence)
+resolution = st.slider("Resolution", step=1, value=20, min_value=1, max_value=1000)
+frequencies = calculate_frequencies(sequence, resolution)
 
 # Définir les couleurs des bases
 base_color = {

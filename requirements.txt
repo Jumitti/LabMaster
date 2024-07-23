@@ -7,3 +7,4 @@ chardet
 Python-IO
 xlsxwriter
 requests
+altair
