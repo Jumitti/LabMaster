@@ -8,3 +8,4 @@ Python-IO
 xlsxwriter
 requests
 altair
+biopython
