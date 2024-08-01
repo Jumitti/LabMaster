@@ -108,7 +108,7 @@ def digestion_protocols(enzymes, db="NEB"):
                                {"Component": f"H2O (μL)",
                                 "For 1 reaction (µL)": 50 - len(enzymes) - 5 - dna_reaction / dna_conc,
                                 f"For {samples} reactions (µL)": samples * (
-                                        50 - samples * len(enzymes) - 5 - dna_reaction / dna_conc)},
+                                        50 - len(enzymes) - 5 - dna_reaction / dna_conc)},
                                {"Component": "Total (µL)", "For 1 reaction (µL)": 50 if 50 - len(
                                    enzymes) - 5 - dna_reaction / dna_conc >= 0 else 50 - (
                                        50 - len(enzymes) - 5 - dna_reaction / dna_conc),
@@ -141,7 +141,7 @@ def digestion_protocols(enzymes, db="NEB"):
                                {"Component": f"H2O (μL)",
                                 "For 1 reaction (µL)": 20 - len(enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc,
                                 f"For {samples} reactions (µL)": samples * (
-                                        20 - samples * len(enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc)},
+                                        20 - len(enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc)},
                                {"Component": "Total (µL)",
                                 "For 1 reaction (µL)": 20 if 20 - len(
                                     enzymes) * vol_enz - 2 - 2 - dna_reaction / dna_conc >= 0 else 20 - (
