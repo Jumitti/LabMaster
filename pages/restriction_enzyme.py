@@ -88,7 +88,7 @@ def digestion_protocols(enzymes, db="NEB"):
                                        key=f"{db}_dna_reaction")
     dna_conc = col2dp.number_input("DNA concentration (ng/µL)", value=100.00, step=0.01, min_value=0.00,
                                    key=f"{db}_dna_concentration")
-    samples = col3dp.number_input("DNA per reaction (ng)", value=2, step=1, min_value=1, key=f"{db}_samples")
+    samples = col3dp.number_input("Number of reaction", value=2, step=1, min_value=1, key=f"{db}_samples")
 
     if db == "NEB":
         protocols_output = [
