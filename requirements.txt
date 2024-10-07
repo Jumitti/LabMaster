@@ -10,3 +10,6 @@ requests
 altair
 biopython
 numpy
+scipy
+seaborn
+pingouin
