@@ -264,6 +264,6 @@ with col1:
         with col2:
             st.warning(f"It appears that there is an error with one or more values in your lists..."
                        "Please check your data. Otherwise, convert your file to .csv with the ';' deliminator.\n\n"
-                       "If this does not resolve the problems, contact me by email (minnitijulien06@gmail.com ; minniti@ipmc.cnrs.fr) or submit a [GitHub Issue](https://github.com/Jumitti/vennlit_v2/issues).\n\n"
+                       "If this does not resolve the problems, contact me by email (minnitijulien06@gmail.com ; minniti@ipmc.cnrs.fr) or submit a [GitHub Issue](https://github.com/Jumitti/LabMaster/issues).\n\n"
                        "Error information:"
                        f"{e}", icon='🚨')
