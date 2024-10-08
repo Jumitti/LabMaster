@@ -75,7 +75,7 @@ with col1:
     # Example section
     st.subheader("📎 Example and Hints")
 
-    st.link_button("Help", 'https://pingouin-stats.org/build/html/generated/pingouin.compute_effsize.html#pingouin.compute_effsize')
+    st.link_button("Help ?!", 'https://pingouin-stats.org/build/html/generated/pingouin.compute_effsize.html#pingouin.compute_effsize')
 
     demo = st.checkbox("**Try example**", value=1)
     if demo:  # Demo mode
@@ -159,19 +159,23 @@ with col1:
             with col2:
                 col2a, col2b = st.columns([2, 1])
                 if len(selected_lists) > 1:
+                    col3.subheader("**Effect size settings**", help=f"Please, see [HELP](https://pingouin-stats.org/build/html/generated/pingouin.compute_effsize.html#pingouin.compute_effsize)")
+
                     n = len(selected_lists)
                     results_matrix = np.zeros((n, n))
 
                     col3a, col3b = col3.columns(2)
+                    col3a.markdown("Effect size type")
                     methode = col3a.radio("Effect size type",
-                                          ("Cohen's d (unpaired)", "Cohen's d (paired)", "Hedges g (unpaired)", "Hedges g (paired)"))
+                                          ("Cohen's d (unpaired)", "Cohen's d' (paired)", "Hedges g (unpaired)", "Hedges g (paired)"),
+                                          label_visibility="collapsed")
 
                     col3b.markdown("Reverse comparison")
                     invert = col3b.toggle("Reverse comparison", value=False)
                     if not invert:
-                        col3b.write(f"Example: {selected_lists[0]} vs. {selected_lists[1]}")
+                        col3b.write(f"**Example**: {selected_lists[0]} vs. {selected_lists[1]}")
                     else:
-                        col3b.write(f"Example: {selected_lists[1]} vs. {selected_lists[0]}")
+                        col3b.write(f"**Example**: {selected_lists[1]} vs. {selected_lists[0]}")
 
                     with warnings.catch_warnings(record=True) as w:
                         warnings.simplefilter("always")
@@ -194,7 +198,7 @@ with col1:
 
                                 if methode == "Cohen's d (unpaired)":
                                     d_result = pg.compute_effsize(a, b, eftype='cohen')
-                                elif methode == "Cohen's d (paired)":
+                                elif methode == "Cohen's d' (paired)":
                                     d_result = pg.compute_effsize(a, b, paired=True, eftype='cohen')
                                 elif methode == "Hedges g (unpaired)":
                                     d_result = pg.compute_effsize(a, b, eftype='hedges')
@@ -205,7 +209,7 @@ with col1:
                                     for warning in w:
                                         if "Switching to paired == False" in str(warning.message):
                                             different_group_size.append((selected_lists[i], selected_lists[j]))
-                                            if methode == "Cohen's d (paired)":
+                                            if methode == "Cohen's d' (paired)":
                                                 d_result = pg.compute_effsize(a, b, eftype='cohen')
                                             elif methode == "Hedges g (paired)":
                                                 d_result = pg.compute_effsize(a, b, eftype='hedges')
@@ -213,7 +217,7 @@ with col1:
                                 results_matrix[i, j] = d_result
                                 results_matrix[j, i] = d_result
 
-                    if short_n > 0 and methode in ["Cohen's d (unpaired)", "Cohen's d (paired)"]:
+                    if short_n > 0 and methode in ["Cohen's d (unpaired)", "Cohen's d' (paired)"]:
                         col3.warning("The Cohen’s d is a biased estimate of the population effect size, especially for "
                                      "small samples (n < 20). It is often preferable to use the corrected Hedges g instead")
 
@@ -249,7 +253,7 @@ with col1:
                         x='Groups',
                         y='Mean',
                         color='Groups'
-                    ).properties()
+                    ).properties().interactive()
 
                     error_bar = barplot.mark_errorbar().encode(
                         y=alt.Y('Mean:Q'),
@@ -260,6 +264,85 @@ with col1:
 
                 else:
                     st.info("Please select at least two groups to compare.")
+
+            with col3:
+                st.divider()
+                if len(selected_lists) > 2:
+                    st.subheader("Eta-square settings", help=f"Please, see [HELP](https://pingouin-stats.org/build/html/generated/pingouin.anova.html)")
+                    # Champ de saisie pour le nombre de listes à comparer
+                    num_groups = st.number_input("Number of groups to compare (minimum 3)", min_value=3, step=1)
+                    detailed = st.toggle("Detailed", value=False)
+
+                    # Liste de couleurs visibles et pâles
+                    colors = [
+                        'rgba(255, 99, 132, 0.3)',  # Rose pâle
+                        'rgba(54, 162, 235, 0.3)',  # Bleu pâle
+                        'rgba(255, 206, 86, 0.3)',  # Jaune pâle
+                        'rgba(75, 192, 192, 0.3)',  # Vert pâle
+                        'rgba(153, 102, 255, 0.3)'  # Violet pâle
+                    ]
+
+                    if len(selected_lists) >= num_groups:
+                        # Prendre les combinaisons de groupes selon le nombre spécifié
+                        group_combinations = list(combinations(selected_lists, num_groups))
+
+                        # Initialiser un DataFrame pour stocker les résultats
+                        results_list = []
+
+                        for index, group_set in enumerate(group_combinations):
+                            # Effectuer l'ANOVA pour les groupes choisis
+                            long_df = df[list(group_set)].melt(var_name="Groups", value_name="Values").dropna()
+                            anova_result = pg.anova(data=long_df, dv="Values", between="Groups", detailed=detailed, effsize="n2")
+
+                            # Extraire l'eta-squared directement des résultats de l'ANOVA
+                            eta_squared_value = anova_result['n2'][
+                                0]  # La première ligne contient l'eta-squared pour l'ANOVA
+
+                            # Ajouter une colonne pour eta-squared dans le résultat ANOVA
+                            anova_result['Eta-Squared'] = [eta_squared_value] + [''] * (
+                                        len(anova_result) - 1)  # Ajouter à la première ligne, le reste vide
+
+                            # Enlever les index non désirés
+                            anova_result.reset_index(drop=True, inplace=True)
+
+                            # Ajouter les résultats dans une liste
+                            results_list.append({
+                                "Groups": ', '.join(group_set),
+                                "ANOVA Result": anova_result,
+                                "Color": colors[index % len(colors)]  # Associer une couleur à chaque groupe
+                            })
+
+                        # Créer un DataFrame pour tous les résultats
+                        all_results = pd.concat([result['ANOVA Result'] for result in results_list],
+                                                keys=[result['Groups'] for result in results_list], names=['Groups'])
+
+                        # Réinitialiser l'index pour enlever les index indésirables
+                        all_results.reset_index(level=0,
+                                                inplace=True)  # Cela déplace le niveau 'Groups' au niveau de la colonne
+
+                        # Supprimer la colonne d'index qui contient 0 et 1
+                        all_results.index = range(len(all_results))  # Réinitialiser l'index
+
+                        # Afficher les résultats consolidés avec couleurs
+                        col2.subheader("ANOVA and Eta-square results", help=f"Please, see [HELP](https://pingouin-stats.org/build/html/generated/pingouin.anova.html)")
+
+                        # Créer une fonction de coloration
+                        def highlight_groups(row):
+                            # Utiliser l'index pour assigner la couleur
+                            color = colors[
+                                results_list.index(next(r for r in results_list if r['Groups'] == row['Groups'])) % len(
+                                    colors)]
+                            return [f'background-color: {color}' for _ in row]
+
+
+                        # Appliquer le style sans afficher la colonne "Color"
+                        styled_results = all_results.style.apply(highlight_groups, axis=1)
+
+                        # Afficher le DataFrame
+                        col2.dataframe(styled_results, hide_index=True, use_container_width=True)
+
+                    else:
+                        col3.info("Please select at least as many groups as the number you wish to compare.")
     except Exception as e:
         with col2:
             st.warning(f"It appears that there is an error with one or more values in your lists..."

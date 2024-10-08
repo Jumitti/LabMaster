@@ -24,7 +24,7 @@ def page_config(logo=None, tool_expanded=None, hide_licence=None):
 
     # Button sidebar
     colsb1, colsb2, colsb3 = st.sidebar.columns(3, gap="small")
-    colsb1.link_button("Help ⁉", '')
+    colsb1.link_button("Help ⁉", 'https://www.notion.so/jumitti/LabMaster-11973c6e8b9c80d5b5ccc7b1fe5c146b')
     colsb2.link_button('GitHub', 'https://github.com/Jumitti/LabMaster')
     if local_test == "":
         colsb3.link_button('Download app 📥', 'https://github.com/Jumitti/LabMaster/releases')
