@@ -153,11 +153,13 @@ colm1, colm2, colm3, colm4 = st.columns([1, 0.5, 1, 1], gap="small")
 colm1.write("**Input user**")
 
 initial_data = [
-    {"Sample name": "WT_1", "Conc. 1 (µg/µL)": 1.5, "Conc. 2 (µg/µL)": 2},
-    {"Sample name": "KO_1", "Conc. 1 (µg/µL)": 2, "Conc. 2 (µg/µL)": 3}
+    {"Sample name": "WT_1", "Conc. 1 (µg/µL)": 1.5, "Conc. 2 (µg/µL)": 2.0},
+    {"Sample name": "KO_1", "Conc. 1 (µg/µL)": 2.0, "Conc. 2 (µg/µL)": 3.0}
 ]
 if "samples_table" not in st.session_state:
     st.session_state["samples_table"] = pd.DataFrame(initial_data)
+elif "Mean (µg/µL)" in st.session_state["samples_table"].columns:
+    st.session_state["samples_table"] = st.session_state["samples_table"].drop(columns=["Mean (µg/µL)"])
 
 samples_table = colm1.data_editor(
     st.session_state["samples_table"],

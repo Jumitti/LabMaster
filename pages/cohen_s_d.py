@@ -91,13 +91,13 @@ with col1:
             st.download_button(
                 label="Download example.csv",
                 data=file,
-                file_name="example_venn_diagram.csv",
+                file_name="example_cohen_s_d.csv",
                 mime="text/csv")
         with open(xlsx_file, "rb") as file:  # Download .xlsx template
             st.download_button(
                 label="Download example.xlsx",
                 data=file,
-                file_name="example_venn_diagram.xlsx",
+                file_name="example_cohen_s_d.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
     # Upload data section
