@@ -36,6 +36,8 @@ def graphique(exons, primers, normalization=False):
                      'position_start_abs': p['left_primer']['position_abs'][0],
                      'position_end_abs': p['left_primer']['position_abs'][1],
                      'tm': p['left_primer']['tm'],
+                     'self_complementarity': p['left_primer']['self_complementarity'],
+                     "self_3prime_complementarity": p['left_primer']['self_3prime_complementarity'],
                      'amplicon_size': p['amplicon_size'],
                      'amplicon_size_abs': p['amplicon_size_abs'],
                      'label': f'Left {i + 1}', 'y': (i + 1) * 10}
@@ -50,6 +52,8 @@ def graphique(exons, primers, normalization=False):
          'position_start_abs': p['right_primer']['position_abs'][0],
          'position_end_abs': p['right_primer']['position_abs'][1],
          'tm': p['right_primer']['tm'],
+         'self_complementarity': p['right_primer']['self_complementarity'],
+         "self_3prime_complementarity": p['right_primer']['self_3prime_complementarity'],
          'amplicon_size': p['amplicon_size'],
          'amplicon_size_abs': p['amplicon_size_abs'],
          'label': f'Right {i + 1}', 'y': (i + 1) * 10}
@@ -83,7 +87,7 @@ def graphique(exons, primers, normalization=False):
         y=alt.Y('y:Q', title=None),  # Utilise la colonne 'y' pour espacer les points
         color=alt.Color('pair:N', scale=alt.Scale(domain=[f'Pair {i + 1}' for i in range(len(primers))]),
                         title='Primers pairs'),
-        tooltip=['pair', 'label', 'sequence', 'tm', 'position', 'position_abs', 'tm', 'amplicon_size', 'amplicon_size_abs']
+        tooltip=['pair', 'label', 'sequence', 'tm', 'position', 'position_abs', 'tm', 'self_complementarity', "self_3prime_complementarity", 'amplicon_size', 'amplicon_size_abs']
     )
 
     annotations_left = alt.Chart(primers_data).mark_text(
