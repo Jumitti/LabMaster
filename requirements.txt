@@ -13,3 +13,7 @@ numpy
 scipy
 seaborn
 pingouin
+
+primer3-py
+ipython
+tqdm
