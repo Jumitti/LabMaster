@@ -2,13 +2,18 @@ import requests
 import xml.etree.ElementTree as ET
 import time
 import random
+import datetime
+import json
+
 from Bio.Seq import Seq
 from Bio import Entrez
 import primer3
-from dev.tfinder import NCBIdna
+from pages.tfinder import NCBIdna
 import altair as alt
 import pandas as pd
 from tqdm import tqdm
+from utils.page_config import page_config
+import streamlit as st
 
 
 def graphique(exons, primers, normalization=False):
@@ -119,6 +124,217 @@ def graphique(exons, primers, normalization=False):
     print(f"Graphique sauvegardé sous 'sequence_visualization{'_adjusted' if normalization is True else ''}.html'. Ouvrez ce fichier pour le visualiser.")
 
 
+# Page config
+page_config()
+
+st.subheader(':blue[Step 1] Promoter and Terminator Extractor')
+colextract1, colextract2, colextract3 = st.columns([0.5, 1.5, 1.5], gap="small")
+
+# Extraction of DNA sequence
+with colextract1:
+    st.info("💡 If you have a FASTA sequence, go to :blue[**Step 2**]")
+
+    all_variants = {}
+    upstream_entry = []
+
+    # Gene ID
+    st.markdown("🔹 :blue[**Step 1.1**] Gene ID:", help='NCBI gene name and NCBI gene ID allowed')
+    gene_id_entry = st.text_area("🔹 :blue[**Step 1.1**] Gene ID:", value="PRKN\n351\nNM_003130.4",
+                                 label_visibility='collapsed')
+    gene_ids = gene_id_entry.strip().split("\n")
+
+with colextract2:
+    tab1, tab2 = st.tabs(['Default', 'Advance'])
+
+    with tab1:
+        # Species
+        st.markdown("🔹 :blue[**Step 1.2**] Species of gene names and sliced variants:")
+        col1, col2 = st.columns(2)
+        # gr = col1.selectbox("Genome:", ["Current", "Previous"], index=0,
+        #                     help='Example for Homo sapiens:\n\n"Current" is GRCh38\n\n"Previous" is GRCh37')
+        species = col1.selectbox("Species:", ["Human", "Mouse", "Rat", "Drosophila", "Zebrafish"], index=0)
+        col2.markdown("")
+        col2.markdown("")
+        all_slice_form = col2.toggle(label='All variants')
+
+        # Run Promoter Finder
+        if st.button(f"🧬 :blue[**Step 1.5**] Extraction...", help='(~5sec/gene)'):
+            response = requests.get(
+                'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&term=nos2[Gene%20Name]+AND+human[Organism]&retmode=json&rettype=xml')
+
+            ncbi_status = True if response.status_code == 200 else False
+
+            if ncbi_status is True:
+                with st.spinner('Please wait...'):
+                    with colextract1:
+
+                        pbar = st.progress(0,
+                                           text='**:blue[Extract info...] ⚠️:red[PLEASE WAIT UNTIL END WITHOUT CHANGING ANYTHING]**')
+                        for i, gene_id in enumerate(gene_ids):
+                            pbar.progress(i / len(gene_ids),
+                                          text=f'**:blue[Extract info... {gene_id}] ⚠️:red[PLEASE WAIT UNTIL END WITHOUT CHANGING ANYTHING]**')
+                            all_variants_output, message = NCBIdna(gene_id, species, all_slice_forms=True if all_slice_form else False).find_sequences()
+                            if "Error 200" not in all_variants_output:
+                                pbar.progress((i + 1) / len(gene_ids),
+
+                                              text=f'**:blue[Extract sequence... {gene_id}] ⚠️:red[PLEASE WAIT UNTIL END WITHOUT CHANGING ANYTHING]**')
+                                st.toast(f"**{gene_id}** from **{species}** extracted", icon='🧬')
+
+                                all_variants.update(all_variants_output)
+
+                            else:
+                                st.error(message)
+                                continue
+
+                        st.session_state['all_variants'] = all_variants
+                        st.success(f"Info extraction complete !")
+                        st.toast(f"Info extraction complete !", icon='😊')
+
+            elif ncbi_status is False:
+                st.warning("⚠ NCBI servers are under maintenance or have an error")
+
+    with tab2:
+        # Advance mode extraction
+        data_df = pd.DataFrame(
+            {
+                "Gene": gene_ids,
+                "human": [False] * len(gene_ids),
+                "mouse": [False] * len(gene_ids),
+                "rat": [False] * len(gene_ids),
+                "drosophila": [False] * len(gene_ids),
+                "zebrafish": [False] * len(gene_ids)
+            }
+        )
+
+        species_list = ['human', 'mouse', 'rat', 'drosophila', 'zebrafish']
+        search_types = ['promoter', 'terminator']
+
+        st.markdown('**🔹 :blue[Step 1.2]** Select species for all genes:',
+                    help='Checking a box allows you to check all the corresponding boxes for each gene. Warning: if you have manually checked boxes in the table, they will be reset.')
+
+        species1, species2, species3, species4, species5 = st.columns(5)
+
+        with species1:
+            all_human = st.toggle("Human")
+        with species2:
+            all_mouse = st.toggle("Mouse")
+        with species3:
+            all_rat = st.toggle("Rat")
+        with species4:
+            all_droso = st.toggle("Drosophila")
+        with species5:
+            all_zebra = st.toggle("Zebrafish")
+
+        if all_human:
+            data_df["human"] = True
+        if all_mouse:
+            data_df["mouse"] = True
+        if all_rat:
+            data_df["rat"] = True
+        if all_droso:
+            data_df["drosophila"] = True
+        if all_zebra:
+            data_df["zebrafish"] = True
+
+        st.markdown('**🔹 :blue[Step 1.2]** On demand genes table',
+                    help="Check the boxes for which you want to extract a sequence. Pay attention that the gene name is equivalent for each species. The choice of species is not available for gene IDs. Parameterize the table last, if you check the boxes above, it resets the whole table.")
+
+        data_dff = st.data_editor(
+            data_df,
+            column_config={
+                "human": st.column_config.CheckboxColumn(
+                    "Human",
+                    default=False,
+                ),
+                "mouse": st.column_config.CheckboxColumn(
+                    "Mouse",
+                    default=False,
+                ),
+                "rat": st.column_config.CheckboxColumn(
+                    "Rat",
+                    default=False,
+                ),
+                "drosophila": st.column_config.CheckboxColumn(
+                    "Drosophila",
+                    default=False,
+                ),
+                "zebrafish": st.column_config.CheckboxColumn(
+                    "Zebrafish",
+                    default=False,
+                )
+            },
+            disabled=["Gene"],
+            hide_index=True,
+        )
+
+        if st.button("🧬 :blue[**Step 1.4**] Extract sequences", help="(~5sec/seq)", key='Advance'):
+            response = requests.get(
+                'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&term=nos2[Gene%20Name]+AND+human[Organism]&retmode=json&rettype=xml')
+
+            ncbi_status = True if response.status_code == 200 else False
+
+            if ncbi_status is True:
+                with colextract1:
+                    pbar = st.progress(0,
+                                       text='**:blue[Extract sequence...] ⚠️:red[PLEASE WAIT UNTIL END WITHOUT CHANGING ANYTHING]**')
+                    for i, gene_info in enumerate(data_dff.itertuples(index=False)):
+                        gene_id = gene_info.Gene
+                        if gene_id.isdigit() or gene_id.startswith('XM_') or gene_id.startswith(
+                                'NM_') or gene_id.startswith('XR_') or gene_id.startswith('NR_'):
+                            for search_type in search_types:
+                                if getattr(gene_info, f'{search_type}'):
+                                    pbar.progress((i + 1) / len(data_dff),
+                                                  text=f'**:blue[Extract sequence...**{gene_id}** from **{species}**] ⚠️:red[PLEASE WAIT UNTIL END WITHOUT CHANGING ANYTHING]**')
+
+                                    all_variants_output, message = NCBIdna(gene_id).find_sequences()
+
+                                    if "Error 200" not in all_variants_output:
+                                        st.toast(f"**{gene_id}** from **{species}** extracted",
+                                                 icon='🧬')
+
+                                        all_variants.update(all_variants_output)
+                                    else:
+                                        st.error(message)
+                                        continue
+
+                        else:
+                            for species in species_list:
+                                for search_type in search_types:
+                                    if getattr(gene_info, f'{species}') and getattr(gene_info,
+                                                                                    f'{search_type}'):
+
+                                        pbar.progress((i + 1) / len(data_dff),
+                                                      text=f'**:blue[Extract sequence... **{gene_id}** from **{species.capitalize()}**] ⚠️:red[PLEASE WAIT UNTIL END WITHOUT CHANGING ANYTHING]**')
+
+                                        all_variants_output, message = NCBIdna(gene_id, species).find_sequences()
+
+                                        if "Error 200" not in all_variants_output:
+                                            st.toast(f"**{gene_id}** from **{species}** extracted",
+                                                     icon='🧬')
+                                            all_variants.update(all_variants_output)
+                                        else:
+                                            st.error(message)
+                                            continue
+
+                    st.session_state['all_variants'] = all_variants
+                    st.success(f"Info extraction complete !")
+                    st.toast(f"Info extraction complete !", icon='😊')
+
+            elif ncbi_status is False:
+                st.warning("⚠ NCBI servers are under maintenance or have an error")
+
+with colextract3:
+    st.markdown("🔹 :blue[**Step 2.1**] Sequences:", help='Copy: Click in sequence, CTRL+A, CTRL+C')
+    if 'all_variants' not in st.session_state:
+        all_variants = ''
+        st.session_state['all_variants'] = all_variants
+    output = st.json(st.session_state['all_variants'], expanded=False)
+
+    current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    st.download_button(label="💾 Download (.json)", data=json.dumps(st.session_state['all_variants'], indent=4),
+                       file_name=f"Sequences_{current_date_time}.json", mime="application/json")
+
+'''
 # Exemple d'utilisation
 entrez_id = "4843"  # ID du gène BRCA1
 # Récupérer toutes les variantes et leurs coordonnées d'exons
@@ -148,84 +364,82 @@ for variant, gene_name, chromosome, exon_coords, normalized_coords, species_API 
             }
 
             primer3_params = {
-                # Tâche principale
-                'PRIMER_TASK': 'generic',  # Génération d'amorces génériques
+                'PRIMER_TASK': 'generic',  # Generic primer generation
 
-                # Paramètres pour les amorces (taille et contenu)
-                'PRIMER_OPT_SIZE': 20,  # Taille optimale de l'amorce
-                'PRIMER_MIN_SIZE': 18,  # Taille minimale de l'amorce
-                'PRIMER_MAX_SIZE': 24,  # Taille maximale de l'amorce
-                'PRIMER_OPT_TM': 60.0,  # Température de fusion optimale (°C)
-                'PRIMER_MIN_TM': 57.0,  # Température de fusion minimale (°C)
-                'PRIMER_MAX_TM': 63.0,  # Température de fusion maximale (°C)
-                'PRIMER_MIN_GC': 45.0,  # Pourcentage GC minimum (%)
-                'PRIMER_MAX_GC': 55.0,  # Pourcentage GC maximum (%)
-                'PRIMER_GC_CLAMP': 0,  # Clampage GC à l'extrémité 3' (nombre minimum de G/C)
-                'PRIMER_MAX_POLY_X': 5,  # Nombre maximal de bases répétées (ex : AAAAA)
+                # Settings for primers (size and content)
+                'PRIMER_OPT_SIZE': 20,  # Optimal primer size
+                'PRIMER_MIN_SIZE': 18,  # Minimum primer size
+                'PRIMER_MAX_SIZE': 24,  # Maximum primer size
+                'PRIMER_OPT_TM': 60.0,  # Optimal melting temperature (°C)
+                'PRIMER_MIN_TM': 57.0,  # Minimum melting temperature (°C)
+                'PRIMER_MAX_TM': 63.0,  # Maximum melting temperature (°C)
+                'PRIMER_MIN_GC': 45.0,  # Minimum GC percentage (%)
+                'PRIMER_MAX_GC': 55.0,  # Maximum GC percentage (%)
+                'PRIMER_GC_CLAMP': 0,  # GC clamping at end 3' (minimum number of G/C)
+                'PRIMER_MAX_POLY_X': 5,  # Maximum number of repeated bases (ex: AAAAA)
 
-                # Paramètres pour la stabilité à l'extrémité 3'
-                'PRIMER_MAX_END_STABILITY': 9.0,  # Stabilité maximale de l'extrémité 3'
+                # Parameters for stability at the 3' end
+                'PRIMER_MAX_END_STABILITY': 9.0,  # Maximum end stability 3'
 
-                # Alignement secondaire (Thermodynamic model)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH': 70.0,  # Mauvais appariement au modèle (paires d'amorces)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL': 40.0,  # Mauvais appariement pour une amorce unique
-                'PRIMER_MAX_SELF_ANY_TH': 45.0,  # Appariement interne (tous les sites, thermodynamique)
-                'PRIMER_MAX_SELF_END_TH': 35.0,  # Appariement interne (extrémité 3', thermodynamique)
-                'PRIMER_PAIR_MAX_COMPL_ANY_TH': 45.0,  # Appariement entre amorces (tous les sites, thermodynamique)
-                'PRIMER_PAIR_MAX_COMPL_END_TH': 35.0,  # Appariement entre amorces (extrémité 3', thermodynamique)
-                'PRIMER_MAX_HAIRPIN_TH': 24.0,  # Énergie libre maximale pour les épingles à cheveux
+                # Secondary alignment (Thermodynamic model)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH': 70.0,  # Bad template match (primer pairs)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL': 40.0,  # Bad match for single primer
+                'PRIMER_MAX_SELF_ANY_TH': 45.0,  # Internal matching (all sites, thermodynamics)
+                'PRIMER_MAX_SELF_END_TH': 35.0,  # Internal pairing (3' end, thermodynamic)
+                'PRIMER_PAIR_MAX_COMPL_ANY_TH': 45.0,  # Primer pairing (all sites, thermodynamics)
+                'PRIMER_PAIR_MAX_COMPL_END_TH': 35.0,  # Pairing between primers (3' end, thermodynamics)
+                'PRIMER_MAX_HAIRPIN_TH': 24.0,  # Maximum free energy for hairpins
 
-                # Alignement secondaire (Ancien modèle)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING': 24.0,  # Mauvais appariement au modèle (paires d'amorces, classique)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL': 12.0,  # Mauvais appariement pour une amorce unique (classique)
-                'PRIMER_MAX_SELF_ANY': 8.0,  # Appariement interne (tous les sites, classique)
-                'PRIMER_MAX_SELF_END': 3.0,  # Appariement interne (extrémité 3', classique)
-                'PRIMER_PAIR_MAX_COMPL_ANY': 8.0,  # Appariement entre amorces (tous les sites, classique)
-                'PRIMER_PAIR_MAX_COMPL_END': 3.0,  # Appariement entre amorces (extrémité 3', classique)
+                # Secondary alignment (Old model)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING': 24.0,  # Bad template matching (primer pairs, classic)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL': 12.0,  # Bad match for single primer (classic)
+                'PRIMER_MAX_SELF_ANY': 8.0,  # Internal pairing (all sites, classic)
+                'PRIMER_MAX_SELF_END': 3.0,  # Internal pairing (3' end, classic)
+                'PRIMER_PAIR_MAX_COMPL_ANY': 8.0,  # Primer pairing (all sites, classic)
+                'PRIMER_PAIR_MAX_COMPL_END': 3.0,  # Pairing between primers (3' end, classic)
 
-                # Recherche des alignements secondaires
-                'PRIMER_THERMODYNAMIC_ALIGNMENT': 1,  # Utiliser le modèle thermodynamique
-                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': 1,
-                # Aligner également avec le modèle thermodynamique (peut être lent)
+                # Search for secondary alignments
+                'PRIMER_THERMODYNAMIC_ALIGNMENT': 1,  # Use thermodynamic model
+                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': 1, # Also align with thermodynamic model (maybe slow)
 
-                # Paramètres généraux pour les paires
-                'PRIMER_NUM_RETURN': 0,  # Nombre maximal de paires retournées
-                'PRIMER_PRODUCT_SIZE_RANGE': [[80, 250]],  # Plage de tailles des produits
+                # General settings for pairs
+                'PRIMER_NUM_RETURN': 0,  # Maximum number of pairs returned
+                'PRIMER_PRODUCT_SIZE_RANGE': [[80, 250]],  # Product size range
 
-                # Activer la sélection des oligos d’hybridation internes
-                'PRIMER_PICK_INTERNAL_OLIGO': 0,  # 1 pour activer, 0 pour désactiver
+                # Enable selection of internal hybridization oligos
+                'PRIMER_PICK_INTERNAL_OLIGO': 0,  # 1 to enable, 0 to disable
 
-                # Paramètres de taille pour les oligos internes
-                'PRIMER_INTERNAL_MIN_SIZE': 18,  # Taille minimale
-                'PRIMER_INTERNAL_OPT_SIZE': 20,  # Taille optimale
-                'PRIMER_INTERNAL_MAX_SIZE': 27,  # Taille maximale
+                # Size parameters for internal oligos
+                'PRIMER_INTERNAL_MIN_SIZE': 18,  # Minimum size
+                'PRIMER_INTERNAL_OPT_SIZE': 20,  # Optimal size
+                'PRIMER_INTERNAL_MAX_SIZE': 27,  # Maximum size
 
-                # Température de fusion (Tm) pour les oligos internes
-                'PRIMER_INTERNAL_MIN_TM': 57.0,  # Tm minimale (°C)
-                'PRIMER_INTERNAL_OPT_TM': 60.0,  # Tm optimale (°C)
-                'PRIMER_INTERNAL_MAX_TM': 63.0,  # Tm maximale (°C)
+                # Melting temperature (Tm) for internal oligos
+                'PRIMER_INTERNAL_MIN_TM': 57.0,  # Minimum Tm (°C)
+                'PRIMER_INTERNAL_OPT_TM': 60.0,  # Optimal Tm (°C)
+                'PRIMER_INTERNAL_MAX_TM': 63.0,  # Maximum Tm (°C)
 
-                # Pourcentage GC pour les oligos internes
-                'PRIMER_INTERNAL_MIN_GC': 20.0,  # Pourcentage GC minimal
-                'PRIMER_INTERNAL_OPT_GC_PERCENT': 50.0,  # Pourcentage GC optimal
-                'PRIMER_INTERNAL_MAX_GC': 80.0,  # Pourcentage GC maximal
+                # GC percentage for internal oligos
+                'PRIMER_INTERNAL_MIN_GC': 20.0,  # Minimum GC percentage
+                'PRIMER_INTERNAL_OPT_GC_PERCENT': 50.0,  # Optimal GC percentage
+                'PRIMER_INTERNAL_MAX_GC': 80.0,  # Maximum GC percentage
 
-                # Concentration des cations monovalents (ex: Na+)
-                'PRIMER_MONOVALENT_CATION_CONC': 50.0,  # En mM (par défaut c'est 50 mM)
+                # Concentration of monovalent cations (e.g.: Na+)
+                'PRIMER_MONOVALENT_CATION_CONC': 50.0,  # In mM (default is 50 mM)
 
-                # Concentration des cations divalents (ex: Mg2+)
-                'PRIMER_DIVALENT_CATION_CONC': 1.5,  # En mM (par défaut c'est 1.5 mM)
+                # Concentration of divalent cations (e.g. Mg2+)
+                'PRIMER_DIVALENT_CATION_CONC': 1.5,  # In mM (default is 1.5 mM)
 
-                # Concentration des dNTPs
-                'PRIMER_DNTP_CONC': 0.6,  # En mM (par défaut c'est 0.6 mM)
+                # Concentration of dNTPs
+                'PRIMER_DNTP_CONC': 0.6,  # In mM (default is 0.6 mM)
 
-                # Formule de correction du sel (utilisation de la formule de Santa Lucia 1998)
-                'PRIMER_SALT_CORRECTION': 1,  # 1 pour utiliser la correction de Santa Lucia 1998
+                # Salt correction formula (using Santa Lucia 1998 formula)
+                'PRIMER_SALT_CORRECTION': 1,  # 1 to use the Santa Lucia 1998 correction
 
-                # Paramètres thermodynamiques (tableau de paramètres pour calculer les Tm)
-                'PRIMER_THERMODYNAMIC_PARAMETERS': 'SantaLucia1998',  # Utiliser la table de Santa Lucia 1998
+                # Thermodynamic parameters (table of parameters to calculate Tm)
+                'PRIMER_THERMODYNAMIC_PARAMETERS': 'SantaLucia1998',  # Use Santa Lucia 1998 table
 
-                # Concentration de l'oligonucléotide pour l'initiation de l'hybridation
+                # Concentration of the oligonucleotide for the init
                 'PRIMER_ANN_Oligo_CONC': 50.0,
             }
 
@@ -387,3 +601,4 @@ for variant, gene_name, chromosome, exon_coords, normalized_coords, species_API 
 
         graphique(normalized_coords, primers)
         graphique(normalized_coords, primers, True)
+'''
