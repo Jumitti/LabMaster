@@ -1,19 +1,15 @@
-import requests
-import xml.etree.ElementTree as ET
-import time
-import random
 import datetime
+import io
 import json
 
-from Bio.Seq import Seq
-from Bio import Entrez
-import primer3
-from pages.tfinder import NCBIdna
 import altair as alt
 import pandas as pd
-from tqdm import tqdm
-from utils.page_config import page_config
+import requests
 import streamlit as st
+from stqdm import stqdm
+from pages.design_primer_API import NCBIdna
+
+from utils.page_config import page_config
 
 
 def graphique(exons, primers, normalization=False):
@@ -34,10 +30,10 @@ def graphique(exons, primers, normalization=False):
     primers_data = [{'pair': f'Pair {i + 1}', 'type': 'Left Primer',
                      'sequence': p['left_primer']['sequence'],
                      'length': p['left_primer']['length'],
-                     'position': p['left_primer']['position'],
+                     'position': f"{p['left_primer']['position'][0]}-{p['left_primer']['position'][1]}",
                      'position_start': p['left_primer']['position'][0],
                      'position_end': p['left_primer']['position'][1],
-                     'position_abs': p['left_primer']['position_abs'],
+                     'position_abs': f"{p['left_primer']['position_abs'][0]}-{p['left_primer']['position_abs'][1]}",
                      'position_start_abs': p['left_primer']['position_abs'][0],
                      'position_end_abs': p['left_primer']['position_abs'][1],
                      'tm': p['left_primer']['tm'],
@@ -50,10 +46,10 @@ def graphique(exons, primers, normalization=False):
         {'pair': f'Pair {i + 1}', 'type': 'Right Primer',
          'sequence': p['right_primer']['sequence'],
          'length': p['right_primer']['length'],
-         'position': p['right_primer']['position'],
+         'position': f"{p['right_primer']['position'][0]}-{p['right_primer']['position'][1]}",
          'position_start': p['right_primer']['position'][0],
          'position_end': p['right_primer']['position'][1],
-         'position_abs': p['right_primer']['position_abs'],
+         'position_abs': f"{p['right_primer']['position_abs'][0]}-{p['right_primer']['position_abs'][1]}",
          'position_start_abs': p['right_primer']['position_abs'][0],
          'position_end_abs': p['right_primer']['position_abs'][1],
          'tm': p['right_primer']['tm'],
@@ -66,33 +62,31 @@ def graphique(exons, primers, normalization=False):
 
     primers_data = pd.DataFrame(primers_data)
 
-    max_end = max(exons_data['end'])  # Cette ligne récupère la valeur maximale de la position "end"
-
     # Définir un offset y fixe pour les exons
     y_offset = (len(primers) + 1) * 10  # Espacement dynamique basé sur le nombre de primers
     exons_data['y'] = [y_offset for _ in range(len(exons_data))]  # Toutes les positions y sont égales
 
     # Exons chart avec y fixe pour tous les exons et même hauteur
     exons_chart = alt.Chart(exons_data).mark_rect(stroke='darkblue', strokeWidth=2).encode(
-        x=alt.X('start:Q',
+        x=alt.X('start:Q', scale=alt.Scale(domain=[int(min(exons_data['start'])) - 1, int(max(exons_data['end']))]),
                 title='Position (Exon + Intron; bp)' if normalization is False else "Position (Exon; bp)"),
         x2=alt.X2('end:Q'),
         y=alt.Y('y:Q', scale=alt.Scale(domain=[0, (len(primers) + 1) * 10])),  # Position y fixe
         color=alt.value('lightblue'),
         tooltip=['exon_number', 'start', 'end']
     ).interactive().properties(
-        width=1920,
-        height=1080,
+        width=1500,
+        height=600,
     )
 
     # Primers chart, maintenant colorié par jeu de primers
     primers_chart = alt.Chart(primers_data).mark_bar(height=10).encode(
         x=alt.X('position_start:Q' if normalization is True else 'position_start_abs:Q'),
         x2=alt.X2('position_end:Q' if normalization is True else 'position_end_abs:Q'),
-        y=alt.Y('y:Q', title=None),  # Utilise la colonne 'y' pour espacer les points
+        y=alt.Y('y:Q', title=None),
         color=alt.Color('pair:N', scale=alt.Scale(domain=[f'Pair {i + 1}' for i in range(len(primers))]),
                         title='Primers pairs'),
-        tooltip=['pair', 'label', 'sequence', 'tm', 'position', 'position_abs', 'tm', 'self_complementarity', "self_3prime_complementarity", 'amplicon_size', 'amplicon_size_abs']
+        tooltip=['pair', 'label', 'sequence', 'tm', 'length', 'position', 'self_complementarity', "self_3prime_complementarity", 'amplicon_size', 'position_abs', 'amplicon_size_abs'],
     )
 
     annotations_left = alt.Chart(primers_data).mark_text(
@@ -119,9 +113,8 @@ def graphique(exons, primers, normalization=False):
     # Combiner Exons et Primers
     final_chart = exons_chart + primers_chart + annotations_left + annotations_right
 
-    # Sauvegarder ou afficher
-    final_chart.save(f'sequence_visualization{"_adjusted" if normalization is True else ""}.html')
-    print(f"Graphique sauvegardé sous 'sequence_visualization{'_adjusted' if normalization is True else ''}.html'. Ouvrez ce fichier pour le visualiser.")
+    final_chart.save("Test.html")
+    return final_chart
 
 
 # Page config
@@ -325,280 +318,84 @@ with colextract2:
 
 with colextract3:
     st.markdown("🔹 :blue[**Step 2.1**] Sequences:", help='Copy: Click in sequence, CTRL+A, CTRL+C')
+
     if 'all_variants' not in st.session_state:
         all_variants = ''
         st.session_state['all_variants'] = all_variants
-    output = st.json(st.session_state['all_variants'], expanded=False)
+    if len(st.session_state['all_variants']) > 0:
+        output = st.json(st.session_state['all_variants'] if len(st.session_state['all_variants']) > 0 else {'Empty'}, expanded=False)
 
-    current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    st.download_button(label="💾 Download (.json)", data=json.dumps(st.session_state['all_variants'], indent=4),
-                       file_name=f"Sequences_{current_date_time}.json", mime="application/json")
+        current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        st.download_button(label="💾 Download (.json)", data=json.dumps(st.session_state['all_variants'], indent=4),
+                           file_name=f"Sequences_{current_date_time}.json", mime="application/json")
+    else:
+        st.warning('You have not extracted any information')
 
-'''
-# Exemple d'utilisation
-entrez_id = "4843"  # ID du gène BRCA1
-# Récupérer toutes les variantes et leurs coordonnées d'exons
-all_variants, message = NCBIdna.all_variant(entrez_id)
-print("All variants:", all_variants)
+nb_primers = st.number_input('Number of primers', value=10, min_value=1, step=1)
 
-# Exemple d'extraction de séquence à partir des coordonnées des exons
-for variant, gene_name, chromosome, exon_coords, normalized_coords, species_API in all_variants:
-    if exon_coords:
-        # Utiliser le premier start et le dernier end pour extraire la séquence
-        first_start = exon_coords[0][0]
-        last_end = exon_coords[-1][1]
+if st.button('Run design primers'):
+    primers_result = []
 
-        # Récupérer la séquence entre ces coordonnées
-        sequence = NCBIdna.get_dna_sequence(gene_name, chromosome, first_start, last_end)
-        print(f"Sequence extracted for {gene_name}: {sequence}")
+    if len(st.session_state['all_variants']) > 0:
+        progress_bar = stqdm(enumerate(st.session_state['all_variants'].items()),
+                             total=len(st.session_state['all_variants']),
+                             desc="Initializing")
 
-        print(normalized_coords)
+        for i, (variant, data) in progress_bar:
+            # Mettre à jour la description à chaque itération
+            progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
 
+            primers = NCBIdna.design_primers(variant, data['gene_name'], data['sequence'], data['normalized_exon_coords'], nb_primers)
 
-        def design_primers(sequence, exons, nb_primers):
-            simplified_sequence = "".join(sequence[start:end] for start, end in exons)
+            if len(primers) > 0:
+                for idx, primer_set in enumerate(primers):
+                    primers_result.append({
+                        'Gene': variant + data['gene_name'],
+                        'Pair': idx + 1,
+                        'Product Size (bp)': primer_set['amplicon_size'],
+                        "For. Pr.(5'->3')": primer_set['left_primer']['sequence'],
+                        'For. Len. (bp)': primer_set['left_primer']['length'],
+                        'For. Pos.': primer_set['left_primer']['position'],
+                        'For. Pos. Abs. (bp)': primer_set['left_primer']['position_abs'],
+                        'For. Tm (°C)': primer_set['left_primer']['tm'],
+                        'For. GC%': primer_set['left_primer']['gc_percent'],
+                        'For. Self Compl.': primer_set['left_primer']['self_complementarity'],
+                        "For. Self 3' Compl.": primer_set['left_primer']['self_3prime_complementarity'],
+                        "Rev. Pr.(5'->3')": primer_set['right_primer']['sequence'],
+                        'Rev. Len. (bp)': primer_set['right_primer']['length'],
+                        'Rev. Pos.': primer_set['right_primer']['position'],
+                        'Rev. Pos. Abs.': primer_set['right_primer']['position_abs'],
+                        'Rev. Tm (°C)': primer_set['right_primer']['tm'],
+                        'Rev. GC%': primer_set['right_primer']['gc_percent'],
+                        'Rev. Self Compl.': primer_set['right_primer']['self_complementarity'],
+                        "Rev. Self 3' Compl.": primer_set['right_primer']['self_3prime_complementarity'],
+                        'Product Size Abs. (bp)': primer_set['amplicon_size_abs']
+                    })
 
-            primer3_input = {
-                'SEQUENCE_ID': 'primer_in_exons',
-                'SEQUENCE_TEMPLATE': simplified_sequence,
-            }
+                with st.expander(f'Primers graph location for {variant} {data["gene_name"]}', expanded=False):
+                    st.altair_chart(graphique(data['normalized_exon_coords'], primers), theme=None,
+                                    use_container_width=True,
+                                    key=f"{variant}_exon_intron")
+                    st.altair_chart(graphique(data['normalized_exon_coords'], primers, True), theme=None,
+                                    use_container_width=True, key=f"{variant}_exon")
 
-            primer3_params = {
-                'PRIMER_TASK': 'generic',  # Generic primer generation
+                st.toast(f"Primers designed for {variant} {data['gene_name']}!")
+            else:
+                st.warning("No primers were designed.")
 
-                # Settings for primers (size and content)
-                'PRIMER_OPT_SIZE': 20,  # Optimal primer size
-                'PRIMER_MIN_SIZE': 18,  # Minimum primer size
-                'PRIMER_MAX_SIZE': 24,  # Maximum primer size
-                'PRIMER_OPT_TM': 60.0,  # Optimal melting temperature (°C)
-                'PRIMER_MIN_TM': 57.0,  # Minimum melting temperature (°C)
-                'PRIMER_MAX_TM': 63.0,  # Maximum melting temperature (°C)
-                'PRIMER_MIN_GC': 45.0,  # Minimum GC percentage (%)
-                'PRIMER_MAX_GC': 55.0,  # Maximum GC percentage (%)
-                'PRIMER_GC_CLAMP': 0,  # GC clamping at end 3' (minimum number of G/C)
-                'PRIMER_MAX_POLY_X': 5,  # Maximum number of repeated bases (ex: AAAAA)
+        if len(primers_result) > 0:
+            st.dataframe(pd.DataFrame(primers_result), hide_index=True)
 
-                # Parameters for stability at the 3' end
-                'PRIMER_MAX_END_STABILITY': 9.0,  # Maximum end stability 3'
+            csv_file = pd.DataFrame(primers_result).to_csv(index=False)
+            excel_file = io.BytesIO()
+            pd.DataFrame(primers_result).to_excel(excel_file, index=False, sheet_name='Sheet1')
+            excel_file.seek(0)
 
-                # Secondary alignment (Thermodynamic model)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH': 70.0,  # Bad template match (primer pairs)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL': 40.0,  # Bad match for single primer
-                'PRIMER_MAX_SELF_ANY_TH': 45.0,  # Internal matching (all sites, thermodynamics)
-                'PRIMER_MAX_SELF_END_TH': 35.0,  # Internal pairing (3' end, thermodynamic)
-                'PRIMER_PAIR_MAX_COMPL_ANY_TH': 45.0,  # Primer pairing (all sites, thermodynamics)
-                'PRIMER_PAIR_MAX_COMPL_END_TH': 35.0,  # Pairing between primers (3' end, thermodynamics)
-                'PRIMER_MAX_HAIRPIN_TH': 24.0,  # Maximum free energy for hairpins
+            download_button1, download_button2 = st.columns(2, gap='small')
+            current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            download_button1.download_button("💾 Download table (.xlsx)", excel_file,
+                               file_name=f'LabmasterDP_{current_date_time}.xlsx',
+                               mime="application/vnd.ms-excel", key='download-excel')
+            download_button2.download_button(label="💾 Download table (.csv)", data=csv_file,
+                               file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
 
-                # Secondary alignment (Old model)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING': 24.0,  # Bad template matching (primer pairs, classic)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL': 12.0,  # Bad match for single primer (classic)
-                'PRIMER_MAX_SELF_ANY': 8.0,  # Internal pairing (all sites, classic)
-                'PRIMER_MAX_SELF_END': 3.0,  # Internal pairing (3' end, classic)
-                'PRIMER_PAIR_MAX_COMPL_ANY': 8.0,  # Primer pairing (all sites, classic)
-                'PRIMER_PAIR_MAX_COMPL_END': 3.0,  # Pairing between primers (3' end, classic)
-
-                # Search for secondary alignments
-                'PRIMER_THERMODYNAMIC_ALIGNMENT': 1,  # Use thermodynamic model
-                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': 1, # Also align with thermodynamic model (maybe slow)
-
-                # General settings for pairs
-                'PRIMER_NUM_RETURN': 0,  # Maximum number of pairs returned
-                'PRIMER_PRODUCT_SIZE_RANGE': [[80, 250]],  # Product size range
-
-                # Enable selection of internal hybridization oligos
-                'PRIMER_PICK_INTERNAL_OLIGO': 0,  # 1 to enable, 0 to disable
-
-                # Size parameters for internal oligos
-                'PRIMER_INTERNAL_MIN_SIZE': 18,  # Minimum size
-                'PRIMER_INTERNAL_OPT_SIZE': 20,  # Optimal size
-                'PRIMER_INTERNAL_MAX_SIZE': 27,  # Maximum size
-
-                # Melting temperature (Tm) for internal oligos
-                'PRIMER_INTERNAL_MIN_TM': 57.0,  # Minimum Tm (°C)
-                'PRIMER_INTERNAL_OPT_TM': 60.0,  # Optimal Tm (°C)
-                'PRIMER_INTERNAL_MAX_TM': 63.0,  # Maximum Tm (°C)
-
-                # GC percentage for internal oligos
-                'PRIMER_INTERNAL_MIN_GC': 20.0,  # Minimum GC percentage
-                'PRIMER_INTERNAL_OPT_GC_PERCENT': 50.0,  # Optimal GC percentage
-                'PRIMER_INTERNAL_MAX_GC': 80.0,  # Maximum GC percentage
-
-                # Concentration of monovalent cations (e.g.: Na+)
-                'PRIMER_MONOVALENT_CATION_CONC': 50.0,  # In mM (default is 50 mM)
-
-                # Concentration of divalent cations (e.g. Mg2+)
-                'PRIMER_DIVALENT_CATION_CONC': 1.5,  # In mM (default is 1.5 mM)
-
-                # Concentration of dNTPs
-                'PRIMER_DNTP_CONC': 0.6,  # In mM (default is 0.6 mM)
-
-                # Salt correction formula (using Santa Lucia 1998 formula)
-                'PRIMER_SALT_CORRECTION': 1,  # 1 to use the Santa Lucia 1998 correction
-
-                # Thermodynamic parameters (table of parameters to calculate Tm)
-                'PRIMER_THERMODYNAMIC_PARAMETERS': 'SantaLucia1998',  # Use Santa Lucia 1998 table
-
-                # Concentration of the oligonucleotide for the init
-                'PRIMER_ANN_Oligo_CONC': 50.0,
-            }
-
-            primers = []
-
-            # Calcul des longueurs cumulées des exons pour convertir en positions absolues
-            exon_lengths = [end - start for start, end in exons]
-            cumulative_lengths = [0] + list(cumsum(exon_lengths))
-
-            # Combinaisons d'exons
-            exon_pairs = [(i, j) for i in range(len(exons)) for j in range(i + 1, len(exons))]
-
-            # Suivi des séquences déjà rencontrées pour éviter les doublons
-            seen_primers = set()
-
-            # Initialisez la barre de progression
-            with tqdm(total=nb_primers, desc="Generating primers", unit="primer") as pbar:
-                while len(primers) < nb_primers:
-                    # Relance la recherche avec plus de résultats si nécessaire
-                    primer3_params['PRIMER_NUM_RETURN'] += 1
-
-                    for i, j in exon_pairs:
-                        if len(primers) >= nb_primers:
-                            break
-
-                        # Définir les exons pour cette paire
-                        exon1_start, exon1_end = exons[i]
-                        exon2_start, exon2_end = exons[j]
-
-                        # Simplifier les positions
-                        simplified_start1 = cumulative_lengths[i]
-                        simplified_end1 = simplified_start1 + (exon1_end - exon1_start)
-                        simplified_start2 = cumulative_lengths[j]
-                        simplified_end2 = simplified_start2 + (exon2_end - exon2_start)
-
-                        # Taille du produit
-                        product_size = simplified_end2 - simplified_start1
-
-                        # Vérifier si la taille est valide
-                        if 80 <= product_size <= 250:
-                            primer3_input['SEQUENCE_PRIMER_PAIR_OK_REGION_LIST'] = [
-                                simplified_start1, simplified_end1 - simplified_start1,
-                                simplified_start2, simplified_end2 - simplified_start2
-                            ]
-
-                            # Appeler Primer3 pour concevoir les amorces
-                            primer_results = primer3.bindings.design_primers(primer3_input, primer3_params)
-
-                            # Vérifier si des amorces ont été générées
-                            if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results[
-                                'PRIMER_PAIR_NUM_RETURNED'] > 0:
-                                for k in range(primer_results['PRIMER_PAIR_NUM_RETURNED']):
-                                    if len(primers) >= nb_primers:
-                                        break
-
-                                    left_key = f'PRIMER_LEFT_{k}_SEQUENCE'
-                                    right_key = f'PRIMER_RIGHT_{k}_SEQUENCE'
-
-                                    if left_key in primer_results and right_key in primer_results:
-                                        # Récupérer les séquences des amorces
-                                        left_seq = primer_results.get(left_key, 'N/A')
-                                        right_seq = primer_results.get(right_key, 'N/A')
-
-                                        # Créer une clé unique pour détecter les doublons
-                                        primer_key = (left_seq, right_seq)
-                                        if primer_key in seen_primers:
-                                            continue  # Passer si les amorces sont déjà enregistrées
-
-                                        # Calculer les positions
-                                        left_position = primer_results.get(f'PRIMER_LEFT_{k}')[0]
-                                        right_position = primer_results.get(f'PRIMER_RIGHT_{k}')[0]
-
-                                        left_absolute = convert_to_absolute(left_position, exons, cumulative_lengths)
-                                        right_absolute = convert_to_absolute(right_position, exons, cumulative_lengths)
-
-                                        amplicon_size = right_position - left_position + 1
-                                        amplicon_size_abs = right_absolute - left_absolute + 1
-
-                                        primers.append({
-                                            'left_primer': {
-                                                'sequence': left_seq,
-                                                'length': len(left_seq),
-                                                'position': (left_position, left_position + len(left_seq)),
-                                                'position_abs': (left_absolute, left_absolute + len(left_seq)),
-                                                'tm': primer_results.get(f'PRIMER_LEFT_{k}_TM', 'N/A'),
-                                                'gc_percent': primer_results.get(f'PRIMER_LEFT_{k}_GC_PERCENT', 'N/A'),
-                                                'self_complementarity': primer_results.get(f'PRIMER_LEFT_{k}_SELF_ANY_TH',
-                                                                                           'N/A'),
-                                                'self_3prime_complementarity': primer_results.get(
-                                                    f'PRIMER_LEFT_{k}_SELF_END_TH', 'N/A'),
-                                                'exon_junction': None
-                                            },
-                                            'right_primer': {
-                                                'sequence': right_seq,
-                                                'length': len(right_seq),
-                                                'position': (right_position, right_position + len(right_seq)),
-                                                'position_abs': (right_absolute, right_absolute + len(right_seq)),
-                                                'tm': primer_results.get(f'PRIMER_RIGHT_{k}_TM', 'N/A'),
-                                                'gc_percent': primer_results.get(f'PRIMER_RIGHT_{k}_GC_PERCENT', 'N/A'),
-                                                'self_complementarity': primer_results.get(f'PRIMER_RIGHT_{k}_SELF_ANY_TH',
-                                                                                           'N/A'),
-                                                'self_3prime_complementarity': primer_results.get(
-                                                    f'PRIMER_RIGHT_{k}_SELF_END_TH', 'N/A'),
-                                                'template_strand': 'Minus',
-                                                'exon_junction': None
-                                            },
-                                            'amplicon_size': amplicon_size,
-                                            'amplicon_size_abs': amplicon_size_abs
-                                        })
-
-                                        pbar.update(1)
-                                        seen_primers.add(primer_key)
-
-            return primers
-
-
-        def cumsum(iterable):
-            total = 0
-            for value in iterable:
-                total += value
-                yield total
-
-
-        def convert_to_absolute(position, exons, cumulative_lengths):
-            for i, (start, end) in enumerate(exons):
-                if position < cumulative_lengths[i + 1]:
-                    offset = position - cumulative_lengths[i]
-                    return start + offset
-            return -1
-
-        primers = design_primers(sequence, normalized_coords, 20)
-
-        results = []
-        for idx, primer_set in enumerate(primers):
-            results.append({
-                'Pair': idx + 1,
-                'Product Size (bp)': primer_set['amplicon_size'],
-                'F Pr.': primer_set['left_primer']['sequence'],
-                'F Len. (bp)': primer_set['left_primer']['length'],
-                'F Pos.': primer_set['left_primer']['position'],
-                'F Pos. Abs.': primer_set['left_primer']['position_abs'],
-                'F Tm (°C)': primer_set['left_primer']['tm'],
-                'F GC%': primer_set['left_primer']['gc_percent'],
-                'F Self Compl.': primer_set['left_primer']['self_complementarity'],
-                "F Self 3' Compl.": primer_set['left_primer']['self_3prime_complementarity'],
-                'R Pr.': primer_set['right_primer']['sequence'],
-                'R Len. (bp)': primer_set['right_primer']['length'],
-                'R Pos.': primer_set['right_primer']['position'],
-                'R Pos. Abs.': primer_set['right_primer']['position_abs'],
-                'R Tm (°C)': primer_set['right_primer']['tm'],
-                'R GC%': primer_set['right_primer']['gc_percent'],
-                'R Self Compl.': primer_set['right_primer']['self_complementarity'],
-                "R Self 3' Compl.": primer_set['right_primer']['self_3prime_complementarity'],
-                'Product Size Abs (bp)': primer_set['amplicon_size_abs']
-            })
-
-        results_df = pd.DataFrame(results)
-        print(results_df)
-
-        graphique(normalized_coords, primers)
-        graphique(normalized_coords, primers, True)
-'''

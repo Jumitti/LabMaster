@@ -1,30 +1,35 @@
 # Copyright (c) 2023 Minniti Julien
 
+# Portions of this software are based on TFinder, originally developed by Minniti Julien, under the MIT License.
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
-# of TFinder and associated documentation files, to deal
-# in TFinder without restriction, including without limitation the rights
-# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of TFinder, and to permit persons to whom TFinder is
-# furnished to do so, subject to the following conditions:
+# of this software and associated documentation files, to deal in the software
+# without restriction, including without limitation the rights to use, copy,
+# modify, merge, publish, distribute, sublicense, and/or sell copies of the
+# software, and to permit persons to whom the software is furnished to do so,
+# subject to the following conditions:
 
 # The above copyright notice and this permission notice shall be included in all
-# copies or substantial portions of TFinder.
+# copies or substantial portions of the software.
 
-# TFINDER IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-# OUT OF OR IN CONNECTION WITH TFINDER OR THE USE OR OTHER DEALINGS IN THE
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 
 import random
 import re
 import time
 import xml.etree.ElementTree as ET
 
+import primer3
 import requests
 from bs4 import BeautifulSoup
+from tqdm import tqdm
 
 
 class bcolors:
@@ -250,11 +255,12 @@ class NCBIdna:
                             sequence = NCBIdna.get_dna_sequence(entrez_id, chraccver, first_start, last_end)
 
                             all_variants[variant] = {
+                                'entrez_id': entrez_id,
                                 'gene_name': gene_name,
                                 'chraccver': chraccver,
                                 'exon_coords': exon_coords,
                                 'normalized_exon_coords': normalized_exon_coords,
-                                'species_API': species_API,
+                                'species': species_API,
                                 'sequence': sequence
                             }
 
@@ -264,12 +270,12 @@ class NCBIdna:
                         return all_variants, f"Transcript(s) found(s) for {entrez_id}: {list(all_variants.keys())}"
                     else:
                         all_variants["Error 200"] = {
-                            "message": f"Transcript not found for {entrez_id}.",
+                            "entrez_id": f"Transcript not found for {entrez_id}.",
                             "gene_name": None,
                             "chraccver": None,
                             "exon_coords": None,
                             "normalized_exon_coords": None,
-                            "species_API": None,
+                            "species": None,
                             "sequence": None
                         }
                         print(
@@ -351,3 +357,236 @@ class NCBIdna:
         reverse_sequence = dna_sequence[::-1].upper()
         complement_sequence = ''.join(complement_dict.get(base, base) for base in reverse_sequence)
         return complement_sequence
+
+    @staticmethod
+    def design_primers(variant, gene_name, sequence, exons, nb_primers):
+        simplified_sequence = "".join(sequence[start:end] for start, end in exons)
+
+        primer3_input = {
+            'SEQUENCE_ID': 'primer_in_exons',
+            'SEQUENCE_TEMPLATE': simplified_sequence,
+        }
+
+        primer3_params = {
+            'PRIMER_TASK': 'generic',  # Generic primer generation
+
+            # Settings for primers (size and content)
+            'PRIMER_OPT_SIZE': 20,  # Optimal primer size
+            'PRIMER_MIN_SIZE': 18,  # Minimum primer size
+            'PRIMER_MAX_SIZE': 24,  # Maximum primer size
+            'PRIMER_OPT_TM': 60.0,  # Optimal melting temperature (°C)
+            'PRIMER_MIN_TM': 57.0,  # Minimum melting temperature (°C)
+            'PRIMER_MAX_TM': 63.0,  # Maximum melting temperature (°C)
+            'PRIMER_MIN_GC': 45.0,  # Minimum GC percentage (%)
+            'PRIMER_MAX_GC': 55.0,  # Maximum GC percentage (%)
+            'PRIMER_GC_CLAMP': 0,  # GC clamping at end 3' (minimum number of G/C)
+            'PRIMER_MAX_POLY_X': 5,  # Maximum number of repeated bases (ex: AAAAA)
+
+            # Parameters for stability at the 3' end
+            'PRIMER_MAX_END_STABILITY': 9.0,  # Maximum end stability 3'
+
+            # Secondary alignment (Thermodynamic model)
+            'PRIMER_MAX_TEMPLATE_MISPRIMING_TH': 70.0,  # Bad template match (primer pairs)
+            'PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL': 40.0,  # Bad match for single primer
+            'PRIMER_MAX_SELF_ANY_TH': 45.0,  # Internal matching (all sites, thermodynamics)
+            'PRIMER_MAX_SELF_END_TH': 35.0,  # Internal pairing (3' end, thermodynamic)
+            'PRIMER_PAIR_MAX_COMPL_ANY_TH': 45.0,  # Primer pairing (all sites, thermodynamics)
+            'PRIMER_PAIR_MAX_COMPL_END_TH': 35.0,  # Pairing between primers (3' end, thermodynamics)
+            'PRIMER_MAX_HAIRPIN_TH': 24.0,  # Maximum free energy for hairpins
+
+            # Secondary alignment (Old model)
+            'PRIMER_MAX_TEMPLATE_MISPRIMING': 24.0,  # Bad template matching (primer pairs, classic)
+            'PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL': 12.0,  # Bad match for single primer (classic)
+            'PRIMER_MAX_SELF_ANY': 8.0,  # Internal pairing (all sites, classic)
+            'PRIMER_MAX_SELF_END': 3.0,  # Internal pairing (3' end, classic)
+            'PRIMER_PAIR_MAX_COMPL_ANY': 8.0,  # Primer pairing (all sites, classic)
+            'PRIMER_PAIR_MAX_COMPL_END': 3.0,  # Pairing between primers (3' end, classic)
+
+            # Search for secondary alignments
+            'PRIMER_THERMODYNAMIC_ALIGNMENT': 1,  # Use thermodynamic model
+            'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': 1,  # Also align with thermodynamic model (maybe slow)
+
+            # General settings for pairs
+            'PRIMER_NUM_RETURN': 0,  # Maximum number of pairs returned
+            'PRIMER_PRODUCT_SIZE_RANGE': [[80, 250]],  # Product size range
+
+            # Enable selection of internal hybridization oligos
+            'PRIMER_PICK_INTERNAL_OLIGO': 0,  # 1 to enable, 0 to disable
+
+            # Size parameters for internal oligos
+            'PRIMER_INTERNAL_MIN_SIZE': 18,  # Minimum size
+            'PRIMER_INTERNAL_OPT_SIZE': 20,  # Optimal size
+            'PRIMER_INTERNAL_MAX_SIZE': 27,  # Maximum size
+
+            # Melting temperature (Tm) for internal oligos
+            'PRIMER_INTERNAL_MIN_TM': 57.0,  # Minimum Tm (°C)
+            'PRIMER_INTERNAL_OPT_TM': 60.0,  # Optimal Tm (°C)
+            'PRIMER_INTERNAL_MAX_TM': 63.0,  # Maximum Tm (°C)
+
+            # GC percentage for internal oligos
+            'PRIMER_INTERNAL_MIN_GC': 20.0,  # Minimum GC percentage
+            'PRIMER_INTERNAL_OPT_GC_PERCENT': 50.0,  # Optimal GC percentage
+            'PRIMER_INTERNAL_MAX_GC': 80.0,  # Maximum GC percentage
+
+            # Concentration of monovalent cations (e.g.: Na+)
+            'PRIMER_MONOVALENT_CATION_CONC': 50.0,  # In mM (default is 50 mM)
+
+            # Concentration of divalent cations (e.g. Mg2+)
+            'PRIMER_DIVALENT_CATION_CONC': 1.5,  # In mM (default is 1.5 mM)
+
+            # Concentration of dNTPs
+            'PRIMER_DNTP_CONC': 0.6,  # In mM (default is 0.6 mM)
+
+            # Salt correction formula (using Santa Lucia 1998 formula)
+            'PRIMER_SALT_CORRECTION': 1,  # 1 to use the Santa Lucia 1998 correction
+
+            # Thermodynamic parameters (table of parameters to calculate Tm)
+            'PRIMER_THERMODYNAMIC_PARAMETERS': 'SantaLucia1998',  # Use Santa Lucia 1998 table
+
+            # Concentration of the oligonucleotide for the init
+            'PRIMER_ANN_Oligo_CONC': 50.0,
+        }
+
+        primers = []
+
+        # Calcul des longueurs cumulées des exons pour convertir en positions absolues
+        exon_lengths = [end - start for start, end in exons]
+        cumulative_lengths = [0] + list(NCBIdna.cumsum(exon_lengths))
+
+        # Combinaisons d'exons
+        exon_pairs = [(i, j) for i in range(len(exons)) for j in range(i + 1, len(exons))]
+
+        # Suivi des séquences déjà rencontrées pour éviter les doublons
+        seen_primers = set()
+
+        # Initialisez la barre de progression
+        with tqdm(total=nb_primers, desc=f"Generating primers for {variant} {gene_name}", unit="primer") as pbar:
+            no_progress_count = 0  # Compteur pour les itérations sans progrès
+            max_no_progress = 2  # Limite des itérations infructueuses
+
+            while len(primers) < nb_primers:
+                primer3_params['PRIMER_NUM_RETURN'] += 1
+                primers_found_in_iteration = False  # Indicateur de progrès dans cette itération
+
+                for i, j in exon_pairs:
+                    if len(primers) >= nb_primers:
+                        break
+
+                    # Définir les exons pour cette paire
+                    exon1_start, exon1_end = exons[i]
+                    exon2_start, exon2_end = exons[j]
+
+                    # Simplifier les positions
+                    simplified_start1 = cumulative_lengths[i]
+                    simplified_end1 = simplified_start1 + (exon1_end - exon1_start)
+                    simplified_start2 = cumulative_lengths[j]
+                    simplified_end2 = simplified_start2 + (exon2_end - exon2_start)
+
+                    # Taille du produit
+                    product_size = simplified_end2 - simplified_start1
+
+                    # Vérifier si la taille est valide
+                    if 80 <= product_size:
+                        primer3_input['SEQUENCE_PRIMER_PAIR_OK_REGION_LIST'] = [
+                            simplified_start1, simplified_end1 - simplified_start1,
+                            simplified_start2, simplified_end2 - simplified_start2
+                        ]
+
+                        # Appeler Primer3 pour concevoir les amorces
+                        primer_results = primer3.bindings.design_primers(primer3_input, primer3_params)
+
+                        # Vérifier si des amorces ont été générées
+                        if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results[
+                            'PRIMER_PAIR_NUM_RETURNED'] > 0:
+                            for k in range(primer_results['PRIMER_PAIR_NUM_RETURNED']):
+                                if len(primers) >= nb_primers:
+                                    break
+
+                                left_key = f'PRIMER_LEFT_{k}_SEQUENCE'
+                                right_key = f'PRIMER_RIGHT_{k}_SEQUENCE'
+
+                                if left_key in primer_results and right_key in primer_results:
+                                    # Récupérer les séquences des amorces
+                                    left_seq = primer_results.get(left_key, 'N/A')
+                                    right_seq = primer_results.get(right_key, 'N/A')
+
+                                    # Créer une clé unique pour détecter les doublons
+                                    primer_key = (left_seq, right_seq)
+                                    if primer_key in seen_primers:
+                                        continue  # Passer si les amorces sont déjà enregistrées
+
+                                    # Calculer les positions
+                                    left_position = primer_results.get(f'PRIMER_LEFT_{k}')[0]
+                                    right_position = primer_results.get(f'PRIMER_RIGHT_{k}')[0]
+
+                                    left_absolute = NCBIdna.convert_to_absolute(left_position, exons,
+                                                                                cumulative_lengths)
+                                    right_absolute = NCBIdna.convert_to_absolute(right_position, exons,
+                                                                                 cumulative_lengths)
+
+                                    amplicon_size = right_position - left_position + 1
+                                    amplicon_size_abs = right_absolute - left_absolute + 1
+
+                                    primers.append({
+                                        'left_primer': {
+                                            'sequence': left_seq,
+                                            'length': len(left_seq),
+                                            'position': (left_position, left_position + len(left_seq)),
+                                            'position_abs': (left_absolute, left_absolute + len(left_seq)),
+                                            'tm': primer_results.get(f'PRIMER_LEFT_{k}_TM', 'N/A'),
+                                            'gc_percent': primer_results.get(f'PRIMER_LEFT_{k}_GC_PERCENT', 'N/A'),
+                                            'self_complementarity': primer_results.get(f'PRIMER_LEFT_{k}_SELF_ANY_TH',
+                                                                                       'N/A'),
+                                            'self_3prime_complementarity': primer_results.get(
+                                                f'PRIMER_LEFT_{k}_SELF_END_TH', 'N/A'),
+                                            'exon_junction': None
+                                        },
+                                        'right_primer': {
+                                            'sequence': right_seq,
+                                            'length': len(right_seq),
+                                            'position': (right_position, right_position + len(right_seq)),
+                                            'position_abs': (right_absolute, right_absolute + len(right_seq)),
+                                            'tm': primer_results.get(f'PRIMER_RIGHT_{k}_TM', 'N/A'),
+                                            'gc_percent': primer_results.get(f'PRIMER_RIGHT_{k}_GC_PERCENT', 'N/A'),
+                                            'self_complementarity': primer_results.get(f'PRIMER_RIGHT_{k}_SELF_ANY_TH',
+                                                                                       'N/A'),
+                                            'self_3prime_complementarity': primer_results.get(
+                                                f'PRIMER_RIGHT_{k}_SELF_END_TH', 'N/A'),
+                                            'template_strand': 'Minus',
+                                            'exon_junction': None
+                                        },
+                                        'amplicon_size': amplicon_size,
+                                        'amplicon_size_abs': amplicon_size_abs
+                                    })
+
+                                    pbar.update(1)
+                                    seen_primers.add(primer_key)
+                                    primers_found_in_iteration = True  # Progrès détecté
+
+                # Si aucun progrès n'est fait dans cette itération, augmenter le compteur
+                if primers_found_in_iteration is False:
+                    no_progress_count += 1
+                else:
+                    no_progress_count = 0  # Réinitialiser le compteur si des primers sont trouvés
+
+                # Si le nombre maximum de tours infructueux est atteint, casser la boucle
+                if no_progress_count >= max_no_progress:
+                    print("Breaking the loop: No new primers found after 5 iterations.")
+                    break
+
+        return primers
+
+    @staticmethod
+    def cumsum(iterable):
+        total = 0
+        for value in iterable:
+            total += value
+            yield total
+
+    @staticmethod
+    def convert_to_absolute(position, exons, cumulative_lengths):
+        for i, (start, end) in enumerate(exons):
+            if position < cumulative_lengths[i + 1]:
+                offset = position - cumulative_lengths[i]
+                return start + offset
+        return -1
