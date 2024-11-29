@@ -449,53 +449,43 @@ class NCBIdna:
 
         primers = []
 
-        # Calcul des longueurs cumulées des exons pour convertir en positions absolues
         exon_lengths = [end - start for start, end in exons]
         cumulative_lengths = [0] + list(NCBIdna.cumsum(exon_lengths))
 
-        # Combinaisons d'exons
         exon_pairs = [(i, j) for i in range(len(exons)) for j in range(i + 1, len(exons))]
 
-        # Suivi des séquences déjà rencontrées pour éviter les doublons
         seen_primers = set()
 
-        # Initialisez la barre de progression
         with tqdm(total=nb_primers, desc=f"Generating primers for {variant} {gene_name}", unit="primer") as pbar:
-            no_progress_count = 0  # Compteur pour les itérations sans progrès
-            max_no_progress = 2  # Limite des itérations infructueuses
+            no_progress_count = 0
+            max_no_progress = 2
 
             while len(primers) < nb_primers:
                 primer3_params['PRIMER_NUM_RETURN'] += 1
-                primers_found_in_iteration = False  # Indicateur de progrès dans cette itération
+                primers_found_in_iteration = False
 
                 for i, j in exon_pairs:
                     if len(primers) >= nb_primers:
                         break
 
-                    # Définir les exons pour cette paire
                     exon1_start, exon1_end = exons[i]
                     exon2_start, exon2_end = exons[j]
 
-                    # Simplifier les positions
                     simplified_start1 = cumulative_lengths[i]
                     simplified_end1 = simplified_start1 + (exon1_end - exon1_start)
                     simplified_start2 = cumulative_lengths[j]
                     simplified_end2 = simplified_start2 + (exon2_end - exon2_start)
 
-                    # Taille du produit
                     product_size = simplified_end2 - simplified_start1
 
-                    # Vérifier si la taille est valide
                     if 80 <= product_size:
                         primer3_input['SEQUENCE_PRIMER_PAIR_OK_REGION_LIST'] = [
                             simplified_start1, simplified_end1 - simplified_start1,
                             simplified_start2, simplified_end2 - simplified_start2
                         ]
 
-                        # Appeler Primer3 pour concevoir les amorces
                         primer_results = primer3.bindings.design_primers(primer3_input, primer3_params)
 
-                        # Vérifier si des amorces ont été générées
                         if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results[
                             'PRIMER_PAIR_NUM_RETURNED'] > 0:
                             for k in range(primer_results['PRIMER_PAIR_NUM_RETURNED']):
@@ -506,16 +496,13 @@ class NCBIdna:
                                 right_key = f'PRIMER_RIGHT_{k}_SEQUENCE'
 
                                 if left_key in primer_results and right_key in primer_results:
-                                    # Récupérer les séquences des amorces
                                     left_seq = primer_results.get(left_key, 'N/A')
                                     right_seq = primer_results.get(right_key, 'N/A')
 
-                                    # Créer une clé unique pour détecter les doublons
                                     primer_key = (left_seq, right_seq)
                                     if primer_key in seen_primers:
-                                        continue  # Passer si les amorces sont déjà enregistrées
+                                        continue
 
-                                    # Calculer les positions
                                     left_position = primer_results.get(f'PRIMER_LEFT_{k}')[0]
                                     right_position = primer_results.get(f'PRIMER_RIGHT_{k}')[0]
 
@@ -561,15 +548,13 @@ class NCBIdna:
 
                                     pbar.update(1)
                                     seen_primers.add(primer_key)
-                                    primers_found_in_iteration = True  # Progrès détecté
+                                    primers_found_in_iteration = True
 
-                # Si aucun progrès n'est fait dans cette itération, augmenter le compteur
                 if primers_found_in_iteration is False:
                     no_progress_count += 1
                 else:
-                    no_progress_count = 0  # Réinitialiser le compteur si des primers sont trouvés
+                    no_progress_count = 0
 
-                # Si le nombre maximum de tours infructueux est atteint, casser la boucle
                 if no_progress_count >= max_no_progress:
                     print("Breaking the loop: No new primers found after 5 iterations.")
                     break
