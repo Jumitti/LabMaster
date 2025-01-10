@@ -445,9 +445,9 @@ if st.button('Run design primers'):
 
                     st.toast(f"Primers designed for {variant} {data['gene_name']}!")
                 else:
-                    st.warning("No primers were designed.")
+                    st.warning(f"No primers were designed for {variant} {data['gene_name']}")
 
-            if len(primers_result) > 0:
+            if primers_result:
                 st.dataframe(pd.DataFrame(primers_result), hide_index=True)
 
                 csv_file = pd.DataFrame(primers_result).to_csv(index=False)

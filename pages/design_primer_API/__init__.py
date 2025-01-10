@@ -376,10 +376,10 @@ class NCBIdna:
                 'PRIMER_MIN_SIZE': 16,  # Minimum primer size
                 'PRIMER_MAX_SIZE': 24,  # Maximum primer size
                 'PRIMER_OPT_TM': 60.0,  # Optimal melting temperature (°C)
-                'PRIMER_MIN_TM': 56.0,  # Minimum melting temperature (°C)
-                'PRIMER_MAX_TM': 64.0,  # Maximum melting temperature (°C)
+                'PRIMER_MIN_TM': 53.0,  # Minimum melting temperature (°C)
+                'PRIMER_MAX_TM': 63.0,  # Maximum melting temperature (°C)
                 'PRIMER_MIN_GC': 45.0,  # Minimum GC percentage (%)
-                'PRIMER_MAX_GC': 60.0,  # Maximum GC percentage (%)
+                'PRIMER_MAX_GC': 55.0,  # Maximum GC percentage (%)
                 'PRIMER_GC_CLAMP': 0,  # GC clamping at end 3' (minimum number of G/C)
                 'PRIMER_MAX_POLY_X': 5,  # Maximum number of repeated bases (ex: AAAAA)
 
@@ -405,11 +405,11 @@ class NCBIdna:
 
                 # Search for secondary alignments
                 'PRIMER_THERMODYNAMIC_ALIGNMENT': 1,  # Use thermodynamic model
-                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': 1,  # Also align with thermodynamic model (maybe slow)
+                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': 1 if len(sequence) < 10000 else 0,  # Also align with thermodynamic model (maybe slow)
 
                 # General settings for pairs
                 'PRIMER_NUM_RETURN': 1,  # Maximum number of pairs returned
-                'PRIMER_PRODUCT_SIZE_RANGE': [[60, 80]],  # Product size range
+                'PRIMER_PRODUCT_SIZE_RANGE': [[80, 250]],  # Product size range
 
                 # Enable selection of internal hybridization oligos
                 'PRIMER_PICK_INTERNAL_OLIGO': 0,  # 1 to enable, 0 to disable
@@ -491,7 +491,7 @@ class NCBIdna:
 
                             primer_results = primer3.bindings.design_primers(primer3_input, primer3_params)
 
-                            print(primer_results)
+                            # print(primer_results)
 
                             if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results[
                                 'PRIMER_PAIR_NUM_RETURNED'] > 0:
@@ -538,8 +538,8 @@ class NCBIdna:
                                             'right_primer': {
                                                 'sequence': right_seq,
                                                 'length': len(right_seq),
-                                                'position': (right_position, right_position + len(right_seq)),
-                                                'position_abs': (right_absolute, right_absolute + len(right_seq)),
+                                                'position': (right_position - len(right_seq), right_position),
+                                                'position_abs': (right_absolute - len(right_seq), right_absolute + len(right_seq)),
                                                 'tm': primer_results.get(f'PRIMER_RIGHT_{k}_TM', 'N/A'),
                                                 'gc_percent': primer_results.get(f'PRIMER_RIGHT_{k}_GC_PERCENT', 'N/A'),
                                                 'self_complementarity': primer_results.get(f'PRIMER_RIGHT_{k}_SELF_ANY_TH',
