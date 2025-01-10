@@ -2,6 +2,9 @@ import datetime
 import io
 import json
 
+from Bio import SeqIO
+from io import StringIO
+
 import altair as alt
 import pandas as pd
 import requests
@@ -331,73 +334,136 @@ with colextract3:
     else:
         st.warning('You have not extracted any information')
 
+# Zone de texte pour saisir une séquence FASTA
+default_fasta = """>ExampleGene1
+ATGCGTACGTAGCTAGCTAGCTAGCTAGCTAGCTA
+>ExampleGene2
+CGTACGTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG
+"""
+
+
+fasta_input = st.text_area(
+    "Enter a DNA sequence in FASTA format (required):",
+    height=200,
+    value=default_fasta
+)
+
+
+def parse_fasta_to_json(fasta_text):
+    lines = fasta_text.strip().split("\n")
+    variants = {}
+    variant_id = 1
+    gene_name = None
+    sequence = ""
+
+    for line in lines:
+        if line.startswith(">"):
+            if gene_name and sequence:
+                variants[variant_id] = {
+                    "gene_name": gene_name,
+                    "sequence": sequence.upper(),
+                    "normalized_exon_coords": [[0, len(sequence)]],
+                }
+                variant_id += 1
+            gene_name = line[1:].strip()
+            sequence = ""
+        else:
+            sequence += line.strip()
+
+    if gene_name and sequence:
+        variants[variant_id] = {
+            "gene_name": gene_name,
+            "sequence": sequence.upper(),
+            "normalized_exon_coords": [[0, len(sequence)]],
+        }
+
+    return variants
+
+
+if st.button("Add Sequence"):
+    if fasta_input.strip():
+        try:
+            variants = parse_fasta_to_json(fasta_input)
+
+            st.session_state['all_variants'] = variants
+            st.success(f"{len(variants)} sequence(s) added successfully!")
+            st.rerun()
+        except Exception as e:
+            st.error(f"Error parsing FASTA: {e}")
+    else:
+        st.error("Please provide a valid FASTA sequence.")
+
 nb_primers = st.number_input('Number of primers', value=10, min_value=1, step=1)
 
 if st.button('Run design primers'):
-    primers_result = []
+    try:
+        primers_result = []
 
-    if len(st.session_state['all_variants']) > 0:
-        progress_bar = stqdm(enumerate(st.session_state['all_variants'].items()),
-                             total=len(st.session_state['all_variants']),
-                             desc="Initializing")
+        if len(st.session_state['all_variants']) > 0:
+            progress_bar = stqdm(enumerate(st.session_state['all_variants'].items()),
+                                 total=len(st.session_state['all_variants']),
+                                 desc="Initializing")
 
-        for i, (variant, data) in progress_bar:
-            # Mettre à jour la description à chaque itération
-            progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
+            for i, (variant, data) in progress_bar:
+                # Mettre à jour la description à chaque itération
+                progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
 
-            primers = NCBIdna.design_primers(variant, data['gene_name'], data['sequence'], data['normalized_exon_coords'], nb_primers)
+                primers = NCBIdna.design_primers(variant, data['gene_name'], data['sequence'], data['normalized_exon_coords'], nb_primers)
 
-            if len(primers) > 0:
-                for idx, primer_set in enumerate(primers):
-                    primers_result.append({
-                        'Gene': variant + data['gene_name'],
-                        'Pair': idx + 1,
-                        'Product Size (bp)': primer_set['amplicon_size'],
-                        "For. Pr.(5'->3')": primer_set['left_primer']['sequence'],
-                        'For. Len. (bp)': primer_set['left_primer']['length'],
-                        'For. Pos.': primer_set['left_primer']['position'],
-                        'For. Pos. Abs. (bp)': primer_set['left_primer']['position_abs'],
-                        'For. Tm (°C)': primer_set['left_primer']['tm'],
-                        'For. GC%': primer_set['left_primer']['gc_percent'],
-                        'For. Self Compl.': primer_set['left_primer']['self_complementarity'],
-                        "For. Self 3' Compl.": primer_set['left_primer']['self_3prime_complementarity'],
-                        "Rev. Pr.(5'->3')": primer_set['right_primer']['sequence'],
-                        'Rev. Len. (bp)': primer_set['right_primer']['length'],
-                        'Rev. Pos.': primer_set['right_primer']['position'],
-                        'Rev. Pos. Abs.': primer_set['right_primer']['position_abs'],
-                        'Rev. Tm (°C)': primer_set['right_primer']['tm'],
-                        'Rev. GC%': primer_set['right_primer']['gc_percent'],
-                        'Rev. Self Compl.': primer_set['right_primer']['self_complementarity'],
-                        "Rev. Self 3' Compl.": primer_set['right_primer']['self_3prime_complementarity'],
-                        'Product Size Abs. (bp)': primer_set['amplicon_size_abs']
-                    })
+                if len(primers) > 0:
+                    for idx, primer_set in enumerate(primers):
+                        primers_result.append({
+                            'Gene': str(variant) + data['gene_name'],
+                            'Pair': idx + 1,
+                            'Product Size (bp)': primer_set['amplicon_size'],
+                            "For. Pr.(5'->3')": primer_set['left_primer']['sequence'],
+                            'For. Len. (bp)': primer_set['left_primer']['length'],
+                            'For. Pos.': primer_set['left_primer']['position'],
+                            'For. Pos. Abs. (bp)': primer_set['left_primer']['position_abs'],
+                            'For. Tm (°C)': primer_set['left_primer']['tm'],
+                            'For. GC%': primer_set['left_primer']['gc_percent'],
+                            'For. Self Compl.': primer_set['left_primer']['self_complementarity'],
+                            "For. Self 3' Compl.": primer_set['left_primer']['self_3prime_complementarity'],
+                            "Rev. Pr.(5'->3')": primer_set['right_primer']['sequence'],
+                            'Rev. Len. (bp)': primer_set['right_primer']['length'],
+                            'Rev. Pos.': primer_set['right_primer']['position'],
+                            'Rev. Pos. Abs.': primer_set['right_primer']['position_abs'],
+                            'Rev. Tm (°C)': primer_set['right_primer']['tm'],
+                            'Rev. GC%': primer_set['right_primer']['gc_percent'],
+                            'Rev. Self Compl.': primer_set['right_primer']['self_complementarity'],
+                            "Rev. Self 3' Compl.": primer_set['right_primer']['self_3prime_complementarity'],
+                            'Product Size Abs. (bp)': primer_set['amplicon_size_abs']
+                        })
 
-                with st.expander(f'Primers graph location for {variant} {data["gene_name"]}', expanded=False):
-                    st.altair_chart(graphique(data['normalized_exon_coords'], primers), theme=None,
-                                    use_container_width=True,
-                                    key=f"{variant}_exon_intron")
-                    st.altair_chart(graphique(data['normalized_exon_coords'], primers, True), theme=None,
-                                    use_container_width=True, key=f"{variant}_exon")
+                    with st.expander(f'Primers graph location for {variant} {data["gene_name"]}', expanded=False):
+                        if len(data['normalized_exon_coords']) > 1:
+                            st.altair_chart(graphique(data['normalized_exon_coords'], primers), theme=None,
+                                            use_container_width=True,
+                                            key=f"{variant}_exon_intron")
+                        st.altair_chart(graphique(data['normalized_exon_coords'], primers, True), theme=None,
+                                        use_container_width=True, key=f"{variant}_exon")
 
-                st.toast(f"Primers designed for {variant} {data['gene_name']}!")
-            else:
-                st.warning("No primers were designed.")
+                    st.toast(f"Primers designed for {variant} {data['gene_name']}!")
+                else:
+                    st.warning("No primers were designed.")
 
-        if len(primers_result) > 0:
-            st.dataframe(pd.DataFrame(primers_result), hide_index=True)
+            if len(primers_result) > 0:
+                st.dataframe(pd.DataFrame(primers_result), hide_index=True)
 
-            csv_file = pd.DataFrame(primers_result).to_csv(index=False)
-            excel_file = io.BytesIO()
-            pd.DataFrame(primers_result).to_excel(excel_file, index=False, sheet_name='Sheet1')
-            excel_file.seek(0)
+                csv_file = pd.DataFrame(primers_result).to_csv(index=False)
+                excel_file = io.BytesIO()
+                pd.DataFrame(primers_result).to_excel(excel_file, index=False, sheet_name='Sheet1')
+                excel_file.seek(0)
 
-            download_button1, download_button2 = st.columns(2, gap='small')
-            current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            download_button1.download_button("💾 Download table (.xlsx)", excel_file,
-                               file_name=f'LabmasterDP_{current_date_time}.xlsx',
-                               mime="application/vnd.ms-excel", key='download-excel')
-            download_button2.download_button(label="💾 Download table (.csv)", data=csv_file,
-                               file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
+                download_button1, download_button2 = st.columns(2, gap='small')
+                current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                download_button1.download_button("💾 Download table (.xlsx)", excel_file,
+                                   file_name=f'LabmasterDP_{current_date_time}.xlsx',
+                                   mime="application/vnd.ms-excel", key='download-excel')
+                download_button2.download_button(label="💾 Download table (.csv)", data=csv_file,
+                                   file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
+    except Exception as e:
+        print(e)
 
 
 
