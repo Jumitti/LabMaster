@@ -376,10 +376,10 @@ class NCBIdna:
                 'PRIMER_MIN_SIZE': 16,  # Minimum primer size
                 'PRIMER_MAX_SIZE': 24,  # Maximum primer size
                 'PRIMER_OPT_TM': 60.0,  # Optimal melting temperature (°C)
-                'PRIMER_MIN_TM': 53.0,  # Minimum melting temperature (°C)
+                'PRIMER_MIN_TM': 57.0,  # Minimum melting temperature (°C)
                 'PRIMER_MAX_TM': 63.0,  # Maximum melting temperature (°C)
-                'PRIMER_MIN_GC': 45.0,  # Minimum GC percentage (%)
-                'PRIMER_MAX_GC': 55.0,  # Maximum GC percentage (%)
+                'PRIMER_MIN_GC': 40.0,  # Minimum GC percentage (%)
+                'PRIMER_MAX_GC': 60.0,  # Maximum GC percentage (%)
                 'PRIMER_GC_CLAMP': 0,  # GC clamping at end 3' (minimum number of G/C)
                 'PRIMER_MAX_POLY_X': 5,  # Maximum number of repeated bases (ex: AAAAA)
 
@@ -409,7 +409,7 @@ class NCBIdna:
 
                 # General settings for pairs
                 'PRIMER_NUM_RETURN': 1,  # Maximum number of pairs returned
-                'PRIMER_PRODUCT_SIZE_RANGE': [[80, 250]],  # Product size range
+                'PRIMER_PRODUCT_SIZE_RANGE': [[60, 120]],  # Product size range
 
                 # Enable selection of internal hybridization oligos
                 'PRIMER_PICK_INTERNAL_OLIGO': 0,  # 1 to enable, 0 to disable

@@ -393,7 +393,19 @@ if st.button("Add Sequence"):
     else:
         st.error("Please provide a valid FASTA sequence.")
 
+if "min_amplicon_size" not in st.session_state:
+    st.session_state["min_amplicon_size"] = 80
+if "max_amplicon_size" not in st.session_state:
+    st.session_state["max_amplicon_size"] = 250
+
+
 nb_primers = st.number_input('Number of primers', value=10, min_value=1, step=1)
+st.session_state["min_amplicon_size"] = st.number_input('Minimum amplicon size', value=60, min_value=10,
+                                    max_value=st.session_state["max_amplicon_size"] - 10, step=1)
+
+st.session_state["max_amplicon_size"] = st.number_input('Maximum amplicon size', value=250,
+                                    min_value=st.session_state["min_amplicon_size"] + 10, step=1)
+
 
 if st.button('Run design primers'):
     try:
@@ -405,7 +417,6 @@ if st.button('Run design primers'):
                                  desc="Initializing")
 
             for i, (variant, data) in progress_bar:
-                # Mettre à jour la description à chaque itération
                 progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
 
                 primers = NCBIdna.design_primers(variant, data['gene_name'], data['sequence'], data['normalized_exon_coords'], nb_primers)

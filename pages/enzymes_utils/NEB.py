@@ -17,7 +17,7 @@ def convert_to_subscript_superscript(seq):
 
 @st.cache_resource
 def get_NEB_enzyme_data():
-    url = 'https://enzymefinder.neb.com/scripts/main-b4fe94d919.js'
+    url = 'https://enzymefinder.neb.com/scripts/main-13f859b782.js'
     local_file_path = 'pages/enzymes_utils/NEB_enz_db.js'
 
     try:
