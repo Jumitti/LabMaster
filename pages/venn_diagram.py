@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 from venn import venn, pseudovenn
+import altair_upset as au
 
 from utils.page_config import page_config
 import os
@@ -272,13 +273,13 @@ with col1:
 
     with col1:
         # Credits section
-        st.subheader("✒️Credits")
-        st.write("Original app by [@professordata](https://github.com/dataprofessor/vennlit)")
-        st.write(
-            "Venn diagram with [@tctianchi](https://github.com/tctianchi/pyvenn) and [@LankyCyril](https://github.com/LankyCyril/pyvenn)")
-        st.write(
-            "Inspired by [InteractiVenn](http://www.interactivenn.net/) (DOI:[10.1186/s12859-015-0611-3](http://doi.org/10.1186/s12859-015-0611-3))")
-        st.write("VennLit V2 rebuild and up-to-date by [@Jumitti](https://github.com/Jumitti/vennlit_v2)")
+        with st.expander("✒️Credits", expanded=False):
+            st.write("Original app by [@professordata](https://github.com/dataprofessor/vennlit)")
+            st.write(
+                "Venn diagram with [@tctianchi](https://github.com/tctianchi/pyvenn) and [@LankyCyril](https://github.com/LankyCyril/pyvenn)")
+            st.write(
+                "Inspired by [InteractiVenn](http://www.interactivenn.net/) (DOI:[10.1186/s12859-015-0611-3](http://doi.org/10.1186/s12859-015-0611-3))")
+            st.write("VennLit V2 rebuild and up-to-date by [@Jumitti](https://github.com/Jumitti/vennlit_v2)")
 
 try:
     plt.figure(figsize=(8, 8))
@@ -327,6 +328,20 @@ try:
             venn(dataset_dict, fmt=venn_format, cmap=cmap_format, fontsize=font_size, legend_loc=legend_loc_format,
                  figsize=(fig_size, fig_size))
             st.pyplot(plt)
+
+            # data = {name: [] for name in selected_lists}
+            # all_items = set.union(*[set(items_occurrence[k]) for k in selected_lists])
+            #
+            # for item in all_items:
+            #     for key in selected_lists:
+            #         data[key].append(1 if item in items_occurrence[key] else 0)
+            #
+            # data_upset = pd.DataFrame(data)
+            # chart = au.UpSetAltair(data=data_upset, sets=selected_lists, title="UpSet Plot",
+            #                        width=max(0, 800),
+            #                        height=max(0, 500)
+            #                        )
+            # st.altair_chart(chart)
 
         with col3:
             # Download PNG and SVG
@@ -419,6 +434,7 @@ try:
             )
             st.write(
                 'Try opening the .svg diagram using [Inkscape](https://inkscape.org/) to move shapes, resize, change font, colors and more.')
+
 except Exception as e:
     with col2:
         st.warning(f"It appears that there is an error with one or more values in your lists..."
@@ -426,3 +442,14 @@ except Exception as e:
                    "If this does not resolve the problems, contact me by email (minnitijulien06@gmail.com ; minniti@ipmc.cnrs.fr) or submit a [GitHub Issue](https://github.com/Jumitti/LabMaster/issues).\n\n"
                    "Error information:"
                    f"{e}", icon='🚨')
+
+data = {name: [] for name in selected_lists}
+all_items = set.union(*[set(items_occurrence[k]) for k in selected_lists])
+
+for item in all_items:
+    for key in selected_lists:
+        data[key].append(1 if item in items_occurrence[key] else 0)
+
+data_upset = pd.DataFrame(data)
+chart = au.UpSetAltair(data=data_upset, sets=selected_lists, title="UpSet Plot")
+st.altair_chart(chart)
