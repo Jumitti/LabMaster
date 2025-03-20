@@ -107,7 +107,7 @@ def download_svg(graph_type="venn"):
     if graph_type == "venn":
         plt.savefig(buffer_svg, format="svg", bbox_inches='tight')
     elif graph_type == "upset":
-        chart.save(buffer_svg, format="svg")
+        chart.save(buffer_svg)
     buffer_svg.seek(0)
 
     return buffer_svg
@@ -180,6 +180,30 @@ sorted_by_option = {"Frequency": "frequency",
 
 sorted_order_option = {"Descending": "descending",
                        "Ascending": "ascending"}
+
+colors_highlight_presets = ['aliceblue', 'antiquewhite', 'aqua', 'aquamarine', 'azure', 'beige', 'bisque', 'black',
+                            'blanchedalmond', 'blue', 'blueviolet', 'brown', 'burlywood', 'cadetblue', 'chartreuse',
+                            'chocolate', 'coral', 'cornflowerblue', 'cornsilk', 'crimson', 'cyan', 'darkblue',
+                            'darkcyan', 'darkgoldenrod', 'darkgray', 'darkgreen', 'darkgrey', 'darkkhaki',
+                            'darkmagenta', 'darkolivegreen', 'darkorange', 'darkorchid', 'darkred', 'darksalmon',
+                            'darkseagreen', 'darkslateblue', 'darkslategray', 'darkslategrey', 'darkturquoise',
+                            'darkviolet', 'deeppink', 'deepskyblue', 'dimgray', 'dimgrey', 'dodgerblue', 'firebrick',
+                            'floralwhite', 'forestgreen', 'fuchsia', 'gainsboro', 'ghostwhite', 'gold', 'goldenrod',
+                            'gray', 'green', 'greenyellow', 'grey', 'honeydew', 'hotpink', 'indianred', 'indigo',
+                            'ivory', 'khaki', 'lavender', 'lavenderblush', 'lawngreen', 'lemonchiffon', 'lightblue',
+                            'lightcoral', 'lightcyan', 'lightgoldenrodyellow', 'lightgray', 'lightgreen', 'lightgrey',
+                            'lightpink', 'lightsalmon', 'lightseagreen', 'lightskyblue', 'lightslategray',
+                            'lightslategrey', 'lightsteelblue', 'lightyellow', 'lime', 'limegreen', 'linen', 'magenta',
+                            'maroon', 'mediumaquamarine', 'mediumblue', 'mediumorchid', 'mediumpurple',
+                            'mediumseagreen', 'mediumslateblue', 'mediumspringgreen', 'mediumturquoise',
+                            'mediumvioletred', 'midnightblue', 'mintcream', 'mistyrose', 'moccasin', 'navajowhite',
+                            'navy', 'oldlace', 'olive', 'olivedrab', 'orange', 'orangered', 'orchid', 'palegoldenrod',
+                            'palegreen', 'paleturquoise', 'palevioletred', 'papayawhip', 'peachpuff', 'peru', 'pink',
+                            'plum', 'powderblue', 'purple', 'rebeccapurple', 'red', 'rosybrown', 'royalblue',
+                            'saddlebrown', 'salmon', 'sandybrown', 'seagreen', 'seashell', 'sienna', 'silver',
+                            'skyblue', 'slateblue', 'slategray', 'slategrey', 'snow', 'springgreen', 'steelblue',
+                            'tan', 'teal', 'thistle', 'tomato', 'turquoise', 'violet', 'wheat', 'white', 'whitesmoke',
+                            'yellow', 'yellowgreen']
 
 # Page config
 page_config()
@@ -456,7 +480,7 @@ try:
             horizontal=True)
         sorted_order = sorted_order_option[sorted_order]
 
-        color = st.color_picker("**Main/highlight color:**", "#215FD2")
+        color = st.selectbox("**Main/highlight color:**", colors_highlight_presets, index=colors_highlight_presets.index("coral"))
 
         cmap = st.selectbox(
             "**Sets colors:**",
