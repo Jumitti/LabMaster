@@ -6,6 +6,7 @@ from zipfile import ZipFile
 
 import chardet
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
 import pandas as pd
 import streamlit as st
 from venn import venn, pseudovenn
@@ -455,6 +456,16 @@ try:
             horizontal=True)
         sorted_order = sorted_order_option[sorted_order]
 
+        color = st.color_picker("**Main/highlight color:**", "#215FD2")
+
+        cmap = st.selectbox(
+            "**Sets colors:**",
+            list(cmap_options.keys()),
+            index=7, key='upset_cmap')
+        cmap_format = cmap_options[cmap]
+        cmap = plt.get_cmap(cmap_format)
+        colors_hex = [mcolors.to_hex(cmap(i / (len(selection_lists) - 1))) for i in range(len(selection_lists))]
+
     with col2:
         st.subheader('UpSet plot')
         data = {name: [] for name in selected_lists}
@@ -465,7 +476,8 @@ try:
                 data[key].append(1 if item in items_occurrence[key] else 0)
 
         data_upset = pd.DataFrame(data)
-        chart = au.UpSetAltair(data=data_upset, sets=selected_lists, sort_by=sorted_by, sort_order=sorted_order)
+        chart = au.UpSetAltair(data=data_upset, sets=selected_lists, sort_by=sorted_by, sort_order=sorted_order,
+                               highlight_color=color, color_range=colors_hex)
         buffer_png = download_png(graph_type="upset")
 
         st.altair_chart(chart, use_container_width=False)
