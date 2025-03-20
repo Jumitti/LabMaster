@@ -10,6 +10,7 @@ import pandas as pd
 import streamlit as st
 from venn import venn, pseudovenn
 import altair_upset as au
+import altair as alt
 
 from utils.page_config import page_config
 import os
@@ -88,18 +89,24 @@ def download_venn_data(lists):
 
 
 # For download PNG Venn
-def download_png():
+def download_png(graph_type="venn"):
     buffer_png = BytesIO()
-    plt.savefig(buffer_png, format="png", bbox_inches='tight')
+    if graph_type == "venn":
+        plt.savefig(buffer_png, format="png", bbox_inches='tight')
+    elif graph_type == "upset":
+        chart.save(buffer_png, format="png")
     buffer_png.seek(0)
 
     return buffer_png
 
 
 # For download SVG Venn
-def download_svg():
+def download_svg(graph_type="venn"):
     buffer_svg = BytesIO()
-    plt.savefig(buffer_svg, format="svg", bbox_inches='tight')
+    if graph_type == "venn":
+        plt.savefig(buffer_svg, format="svg", bbox_inches='tight')
+    elif graph_type == "upset":
+        chart.save(buffer_svg, format="svg")
     buffer_svg.seek(0)
 
     return buffer_svg
@@ -165,6 +172,13 @@ legend_loc_options = {'Best': 'best',
                       'Center Right': 'center right',
                       'Center Left': 'center left',
                       'Center': 'center'}
+
+# Setting of UpSet plot configurations
+sorted_by_option = {"Frequency": "frequency",
+                    "Degree": "degree"}
+
+sorted_order_option = {"Descending": "descending",
+                       "Ascending": "ascending"}
 
 # Page config
 page_config()
@@ -254,7 +268,7 @@ with col1:
             st.dataframe(df, hide_index=True)
             lists = df.columns.tolist()
 
-            with col3:
+            with col2:
                 # Lists selection
                 st.subheader('📌 Lists selection')
                 items_occurrence = {per_list: set(df[per_list].dropna()) for per_list in lists}
@@ -285,6 +299,7 @@ try:
     plt.figure(figsize=(8, 8))
     if len(selection_lists) > 1:
         with col3:
+            st.subheader("")
             venn_data = download_venn_data(selected_lists)
             st.download_button(label="💾 Download Venn data",
                                data=venn_data,
@@ -328,20 +343,6 @@ try:
             venn(dataset_dict, fmt=venn_format, cmap=cmap_format, fontsize=font_size, legend_loc=legend_loc_format,
                  figsize=(fig_size, fig_size))
             st.pyplot(plt)
-
-            # data = {name: [] for name in selected_lists}
-            # all_items = set.union(*[set(items_occurrence[k]) for k in selected_lists])
-            #
-            # for item in all_items:
-            #     for key in selected_lists:
-            #         data[key].append(1 if item in items_occurrence[key] else 0)
-            #
-            # data_upset = pd.DataFrame(data)
-            # chart = au.UpSetAltair(data=data_upset, sets=selected_lists, title="UpSet Plot",
-            #                        width=max(0, 800),
-            #                        height=max(0, 500)
-            #                        )
-            # st.altair_chart(chart)
 
         with col3:
             # Download PNG and SVG
@@ -435,6 +436,47 @@ try:
             st.write(
                 'Try opening the .svg diagram using [Inkscape](https://inkscape.org/) to move shapes, resize, change font, colors and more.')
 
+    # Upset plot
+    with col3:
+        st.divider()
+        # Settings
+        st.subheader('⚙️UpSet plot settings')
+        sorted_by = st.radio(
+            "**Number format:**",
+            list(sorted_by_option.keys()),
+            index=0,
+            horizontal=True)
+        sorted_by = sorted_by_option[sorted_by]
+
+        sorted_order = st.radio(
+            "**Number format:**",
+            list(sorted_order_option.keys()),
+            index=0,
+            horizontal=True)
+        sorted_order = sorted_order_option[sorted_order]
+
+    with col2:
+        st.subheader('UpSet plot')
+        data = {name: [] for name in selected_lists}
+        all_items = set.union(*[set(items_occurrence[k]) for k in selected_lists])
+
+        for item in all_items:
+            for key in selected_lists:
+                data[key].append(1 if item in items_occurrence[key] else 0)
+
+        data_upset = pd.DataFrame(data)
+        chart = au.UpSetAltair(data=data_upset, sets=selected_lists, sort_by=sorted_by, sort_order=sorted_order)
+        buffer_png = download_png(graph_type="upset")
+
+        st.altair_chart(chart, use_container_width=False)
+
+    col3.download_button(
+        label="💾 Download UpSet plot (.png)",
+        data=buffer_png,
+        file_name=f'upsetplot{"".join("_" + selected_list for selected_list in selection_lists)}.png',
+        mime="image/png"
+    )
+
 except Exception as e:
     with col2:
         st.warning(f"It appears that there is an error with one or more values in your lists..."
@@ -442,14 +484,3 @@ except Exception as e:
                    "If this does not resolve the problems, contact me by email (minnitijulien06@gmail.com ; minniti@ipmc.cnrs.fr) or submit a [GitHub Issue](https://github.com/Jumitti/LabMaster/issues).\n\n"
                    "Error information:"
                    f"{e}", icon='🚨')
-
-data = {name: [] for name in selected_lists}
-all_items = set.union(*[set(items_occurrence[k]) for k in selected_lists])
-
-for item in all_items:
-    for key in selected_lists:
-        data[key].append(1 if item in items_occurrence[key] else 0)
-
-data_upset = pd.DataFrame(data)
-chart = au.UpSetAltair(data=data_upset, sets=selected_lists, title="UpSet Plot")
-st.altair_chart(chart)

@@ -20,4 +20,8 @@ tqdm~=4.66.5
 bs4~=0.0.2
 beautifulsoup4~=4.12.3
 stqdm
-altair-upset
+# altair-upset
+altair-saver
+cairosvg
+pillow
+vl-convert-python

@@ -28,9 +28,11 @@ class UpSetChart:
         self.data = data
         self.sets = sets
 
-    def save(self, filename):
+    def save(self, filename, format="png"):
+        if format not in['png', 'svg', 'pdf', 'html', 'json', 'vega']:
+            raise ValueError("Format not supported, must specify file format: ['png', 'svg', 'pdf', 'html', 'json', 'vega']")
         """Save the chart to a file."""
-        self.chart.save(filename)
+        self.chart.save(filename, format=format)
 
     def properties(self, **kwargs):
         """Update chart properties."""
@@ -89,7 +91,7 @@ def UpSetAltair(
     line_connection_size: int = 1,  # Reduced from 2
     horizontal_bar_size: int = 20,
     vertical_bar_label_size: int = 16,
-    vertical_bar_padding: int = 20,
+    # vertical_bar_padding: int = 20,
     theme: Optional[str] = None,
 ) -> UpSetChart:
     """Generate interactive UpSet plots using Altair. [Lex et al., 2014]_
@@ -217,11 +219,10 @@ def UpSetAltair(
 
     # Future update
     num_intersections = max(1, len(data["intersection_id"].unique().tolist()))
-    import streamlit as st
-    st.write(num_intersections)
-    st.write(matrix_width)
-    vertical_bar_size = min(30, max(0, width / num_intersections - vertical_bar_padding))
+    # vertical_bar_size = min(30, max(0, width / num_intersections - vertical_bar_padding))
 
+    # Automatic padding
+    vertical_bar_size = min(30, (matrix_width / num_intersections) - 5)
 
     # vertical_bar_size = min(
     #     30,
@@ -308,7 +309,7 @@ def UpSetAltair(
             horizontal_bar_axis,
             horizontal_bar.properties(width=horizontal_bar_chart_width),
             spacing=0,  # Minimize spacing between components
-        ).resolve_scale(y="shared"),
+        ).resolve_scale(x="shared", y="shared"),  # X shared also
         spacing=5,
     ).add_params(legend_selection)
 
