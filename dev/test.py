@@ -3,12 +3,10 @@ import time
 from bs4 import BeautifulSoup
 import re
 
-# 🔹 1. Définition des primers et de l'espèce
-primer_fwd = "GGCAACACTCTCGGAGACAA"
+primer_fwd = "GGCAACACTCGGAGACAA"
 primer_rev = "GGAAAGATCCCAGCAGCAGT"
-species = "Homo+sapiens"
+species = "Homo sapiens"
 
-# 🔹 2. Construction de l'URL de requête
 url = (
     "https://www.ncbi.nlm.nih.gov/tools/primer-blast/primertool.cgi?"
     "CMD=request&CON_ANEAL_OLIGO=50.0&CON_DNTPS=0.6&DIVA_CATIONS=1.5&EVALUE=30000"
@@ -41,23 +39,18 @@ url = (
     "&USER_TYPE=2&WORD_SIZE=7"
 )
 
-# 🔹 3. Envoi de la requête POST et récupération de la réponse HTML
 session = requests.Session()
 response = session.get(url)
 
-# Vérification si la requête a réussi
 if response.status_code != 200:
     print(f"❌ Erreur lors de la requête : {response.status_code}")
     exit()
 
-# 🔹 4. Extraction du JOB ID depuis le HTML
 soup = BeautifulSoup(response.text, "html.parser")
-# Méthode 1 : Rechercher un champ input caché avec le JOB ID
 job_id_input = soup.find("input", {"name": "job_key"})
 if job_id_input:
     job_key = job_id_input.get("value")
 else:
-    # Méthode 2 : Chercher le JOB ID dans du JavaScript
     match = re.search(r"job_key=([A-Za-z0-9_-]+)", response.text)
     if match:
         job_key = match.group(1)
@@ -67,17 +60,15 @@ else:
 
 print(f"✅ JOB ID récupéré : {job_key}")
 
-# 🔹 5. Vérification périodique de l'état du job
 status_url = f"https://www.ncbi.nlm.nih.gov/tools/primer-blast/primertool.cgi?job_key={job_key}&CMD=get"
 
 while True:
-    time.sleep(10)  # Attendre 10 secondes avant chaque vérification
+    time.sleep(10)
     status_response = session.get(status_url)
 
     soup = BeautifulSoup(status_response.text, "html.parser")
     print(soup)
 
-    # Vérifier si les résultats sont disponibles
     primer_pair = soup.find("a", {"name": "0"})
     forward_primer = soup.find("th", string="Forward primer")
     reverse_primer = soup.find("th", string="Reverse primer")
@@ -88,14 +79,63 @@ while True:
     else:
         print("⏳ En attente des résultats...")
 
-# 🔹 6. Extraction des résultats PCR in-silico
 results = []
-amplicon_sizes = soup.find_all("td", string=re.compile(r"\d+\s*bp"))
 
-for row in amplicon_sizes:
-    results.append(row.text.strip())
+entries = soup.find_all("a", href=re.compile(r"viewer.fcgi\?db=nucleotide"))
+
+for entry in entries:
+    gene_name = entry.text.strip()
+    gene_info = entry.next_sibling.strip() if entry.next_sibling else "N/A"
+
+    pre_block = entry.find_next("pre").text.strip()
+
+    product_length_match = re.search(r"product length = (\d+)", pre_block)
+    product_length = int(product_length_match.group(1)) if product_length_match else None
+
+    forward_primer, forward_start, forward_template, forward_end = "N/A", "N/A", "N/A", "N/A"
+    reverse_primer, reverse_start, reverse_template, reverse_end = "N/A", "N/A", "N/A", "N/A"
+
+    forward_match = re.search(r"Forward primer\s+\d+\s+([A-Za-z]+)\s+\d+", pre_block)
+    reverse_match = re.search(r"Reverse primer\s+\d+\s+([A-Za-z]+)\s+\d+", pre_block)
+
+    if forward_match:
+        forward_primer = forward_match.group(1)
+    if reverse_match:
+        reverse_primer = reverse_match.group(1)
+
+    template_matches = re.findall(r"Template\s+(\d+)\s+([A-Za-z.\s]+)\s+(\d+)", pre_block)
+
+    if len(template_matches) > 0:
+        forward_start, forward_template, forward_end = template_matches[0]
+    if len(template_matches) > 1:
+        reverse_start, reverse_template, reverse_end = template_matches[1]
+
+    results.append({
+        "gene": gene_info,
+        "name": gene_name,
+        "product_length": product_length,
+        "forward_primer": forward_primer,
+        "forward_start": forward_start,
+        "forward_template": forward_template,
+        "forward_end": forward_end,
+        "reverse_primer": reverse_primer,
+        "reverse_start": reverse_start,
+        "reverse_template": reverse_template,
+        "reverse_end": reverse_end,
+    })
+
+filtered_lengths = [res["product_length"] for res in results if res["product_length"] is not None and res["product_length"] < 350]
+
+if len(set(filtered_lengths)) <= 1:
+    print("✅ C'est bien, tous les product_length < 350 sont identiques.")
+else:
+    print("❌ Ce n'est pas bon, les product_length < 350 sont différents.")
 
 if results:
-    print(f"✅ Amplicons trouvés : {results}")
+    print("✅ Résultats PCR in-silico :")
+    print(results)
 else:
     print("❌ Aucun amplicon trouvé.")
+
+
+
