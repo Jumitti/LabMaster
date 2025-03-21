@@ -41,7 +41,7 @@ def page_config(logo=None, tool_expanded=None, hide_licence=None):
         st.page_link("pages/restriction_enzyme.py", label="Restriction Enzymes")
         st.page_link("pages/RT-qPCR.py", label="RT-qPCR")
         st.page_link("pages/transfection.py", label="Transfection")
-        st.page_link("pages/venn_diagram.py", label="Venn diagram")
+        st.page_link("pages/venn_diagram.py", label="Venn/UpSet plot")
         st.page_link("pages/westernblot.py", label="Western Blot")
 
     # Licence <-- I preferred to add it like this to allow you to always use the sidebar and add the license afterwards (like in pages/transfection.py)

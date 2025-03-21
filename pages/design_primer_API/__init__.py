@@ -49,6 +49,119 @@ headers = {
 }
 
 
+ucsc_species = {
+    "Homo sapiens": {'org': 'Human', 'db': 'hg38', 'wp_target': ['genome', 'hg38KgSeqV47']},
+    "Mus musculus": {'org': 'Mouse', 'db': 'mm39', 'wp_target': ['genome', 'mm39KgSeqVM36']},
+    "Anopheles gambiae": {'org': 'A.+gambiae', 'db': 'anoGam3', 'wp_target': ['genome']},
+    "Apis mellifera": {'org': 'A.+mellifera', 'db': 'apiMel2', 'wp_target': ['genome']},
+    "Xenopus laevis": {'org': 'African+clawed+frog', 'db': 'xenLae2', 'wp_target': ['genome']},
+    "Vicugna pacos": {'org': 'Alpaca', 'db': 'vicPac2', 'wp_target': ['genome']},
+    "Alligator mississippiensis": {'org': 'American+alligator', 'db': 'allMis1', 'wp_target': ['genome']},
+    "Dasypus novemcinctus": {'org': 'Armadillo', 'db': 'dasNov3', 'wp_target': ['genome']},
+    "Gadus morhua": {'org': 'Atlantic+cod', 'db': 'gadMor1', 'wp_target': ['genome']},
+    "Papio anubis": {'org': 'Baboon', 'db': 'papAnu4', 'wp_target': ['genome']},
+    "Bison bison": {'org': 'Bison', 'db': 'bisBis1', 'wp_target': ['genome']},
+    "Pan paniscus": {'org': 'Bonobo', 'db': 'panPan3', 'wp_target': ['genome']},
+    "Apteryx australis": {'org': 'Brown+kiwi', 'db': 'aptMan1', 'wp_target': ['genome']},
+    "Melopsittacus undulatus": {'org': 'Budgerigar', 'db': 'melUnd1', 'wp_target': ['genome']},
+    "Otolemur garnettii": {'org': 'Bushbaby', 'db': 'otoGar3', 'wp_target': ['genome']},
+    "Caenorhabditis brenneri": {'org': 'C.+brenneri', 'db': 'caePb2', 'wp_target': ['genome']},
+    "Caenorhabditis briggsae": {'org': 'C.+briggsae', 'db': 'cb3', 'wp_target': ['genome']},
+    "Caenorhabditis elegans": {'org': 'C.+elegans', 'db': 'ce11', 'wp_target': ['genome']},
+    "Ciona intestinalis": {'org': 'C.+intestinalis', 'db': 'ci3', 'wp_target': ['genome']},
+    "Caenorhabditis japonica": {'org': 'C.+japonica', 'db': 'caeJap1', 'wp_target': ['genome']},
+    "Caenorhabditis remanei": {'org': 'C.+remanei', 'db': 'caeRem3', 'wp_target': ['genome']},
+    "Felis catus": {'org': 'Cat', 'db': 'felCat9', 'wp_target': ['genome']},
+    "Gallus gallus": {'org': 'Chicken', 'db': 'galGal6', 'wp_target': ['genome']},
+    "Pan troglodytes": {'org': 'Chimp', 'db': 'panTro6', 'wp_target': ['genome']},
+    "Cricetulus griseus": {'org': 'Chinese+hamster', 'db': 'criGriChoV2', 'wp_target': ['genome']},
+    "Manis pentadactyla": {'org': 'Chinese+pangolin', 'db': 'manPen1', 'wp_target': ['genome']},
+    "Latimeria chalumnae": {'org': 'Coelacanth', 'db': 'latCha1', 'wp_target': ['genome']},
+    "Bos taurus": {'org': 'Cow', 'db': 'bosTau9', 'wp_target': ['genome']},
+    "Macaca fascicularis": {'org': 'Crab-eating+macaque', 'db': 'macFas5', 'wp_target': ['genome']},
+    "Drosophila ananassae": {'org': 'D.+ananassae', 'db': 'droAna2', 'wp_target': ['genome']},
+    "Drosophila erecta": {'org': 'D.+erecta', 'db': 'droEre1', 'wp_target': ['genome']},
+    "Drosophila grimshawi": {'org': 'D.+grimshawi', 'db': 'droGri1', 'wp_target': ['genome']},
+    "Drosophila melanogaster": {'org': 'D.+melanogaster', 'db': 'dm6', 'wp_target': ['genome']},
+    "Drosophila mojavensis": {'org': 'D.+mojavensis', 'db': 'droMoj2', 'wp_target': ['genome']},
+    "Drosophila persimilis": {'org': 'D.+persimilis', 'db': 'droPer1', 'wp_target': ['genome']},
+    "Drosophila pseudoobscura": {'org': 'D.+pseudoobscura', 'db': 'dp3', 'wp_target': ['genome']},
+    "Drosophila sechellia": {'org': 'D.+sechellia', 'db': 'droSec1', 'wp_target': ['genome']},
+    "Drosophila simulans": {'org': 'D.+simulans', 'db': 'droSim1', 'wp_target': ['genome']},
+    "Drosophila virilis": {'org': 'D.+virilis', 'db': 'droVir2', 'wp_target': ['genome']},
+    "Drosophila yakuba": {'org': 'D.+yakuba', 'db': 'droYak2', 'wp_target': ['genome']},
+    "Canis lupus familiaris": {'org': 'Dog', 'db': 'canFam6', 'wp_target': ['genome']},
+    "Delphinidae": {'org': 'Dolphin', 'db': 'turTru2', 'wp_target': ['genome']},
+    "Zaire ebolavirus": {'org': 'Ebola+virus', 'db': 'eboVir3', 'wp_target': ['genome']},
+    "Loxodonta africana": {'org': 'Elephant', 'db': 'loxAfr3', 'wp_target': ['genome']},
+    "Callorhinchus milii": {'org': 'Elephant+shark', 'db': 'calMil1', 'wp_target': ['genome']},
+    "Mustela putorius furo": {'org': 'Ferret+', 'db': 'musFur1', 'wp_target': ['genome']},
+    "Takifugu rubripes": {'org': 'Fugu', 'db': 'fr3', 'wp_target': ['genome']},
+    "Thamnophis sirtalis": {'org': 'Garter+snake', 'db': 'thaSir1', 'wp_target': ['genome']},
+    "Hylobates": {'org': 'Gibbon', 'db': 'nomLeu3', 'wp_target': ['genome']},
+    "Aquila chrysaetos": {'org': 'Golden+eagle', 'db': 'aquChr2', 'wp_target': ['genome']},
+    "Rhinopithecus roxellana": {'org': 'Golden+snub-nosed+monkey', 'db': 'rhiRox1', 'wp_target': ['genome']},
+    "Gorilla gorilla": {'org': 'Gorilla', 'db': 'gorGor6', 'wp_target': ['genome']},
+    "Chlorocebus sabaeus": {'org': 'Green+monkey', 'db': 'chlSab2', 'wp_target': ['genome']},
+    "Cavia porcellus": {'org': 'Guinea+pig', 'db': 'cavPor3', 'wp_target': ['genome']},
+    "Neomonachus schauinslandi": {'org': 'Hawaiian+monk+seal', 'db': 'neoSch1', 'wp_target': ['genome']},
+    "Erinaceus europaeus": {'org': 'Hedgehog', 'db': 'eriEur2', 'wp_target': ['genome']},
+    "Equus caballus": {'org': 'Horse', 'db': 'equCab3', 'wp_target': ['genome']},
+    "Dipodomys": {'org': 'Kangaroo+rat', 'db': 'dipOrd1', 'wp_target': ['genome']},
+    "Petromyzon marinus": {'org': 'Lamprey', 'db': 'petMar2', 'wp_target': ['genome']},
+    "Branchiostoma": {'org': 'Lancelet', 'db': 'braFlo1', 'wp_target': ['genome']},
+    "Sceloporus": {'org': 'Lizard', 'db': 'anoCar2', 'wp_target': ['genome']},
+    "Cynocephalus variegatus": {'org': 'Malayan+flying+lemur', 'db': 'galVar1', 'wp_target': ['genome']},
+    "Trichechus manatus": {'org': 'Manatee', 'db': 'triMan1', 'wp_target': ['genome']},
+    "Callithrix jacchus": {'org': 'Marmoset', 'db': 'calJac4', 'wp_target': ['genome']},
+    "Oryzias latipes": {'org': 'Medaka', 'db': 'oryLat2', 'wp_target': ['genome']},
+    "Geospiza fortis": {'org': 'Medium+ground+finch', 'db': 'geoFor1', 'wp_target': ['genome']},
+    "Pteropus": {'org': 'Megabat', 'db': 'pteVam1', 'wp_target': ['genome']},
+    "Myotis lucifugus": {'org': 'Little+brown+bat', 'db': 'myoLuc2', 'wp_target': ['genome']},
+    "Balaenoptera acutorostrata": {'org': 'Minke+whale', 'db': 'balAcu1', 'wp_target': ['genome']},
+    "Microcebus murinus": {'org': 'Mouse+lemur', 'db': 'micMur2', 'wp_target': ['genome']},
+    "Heterocephalus glaber": {'org': 'Naked+mole-rat', 'db': 'hetGla2', 'wp_target': ['genome']},
+    "Oreochromis niloticus": {'org': 'Nile+tilapia', 'db': 'oreNil2', 'wp_target': ['genome']},
+    "Monodelphis domestica": {'org': 'Opossum', 'db': 'monDom5', 'wp_target': ['genome']},
+    "Pongo pygmaeus": {'org': 'Orangutan', 'db': 'ponAbe3', 'wp_target': ['genome']},
+    "Pristionchus pacificus": {'org': 'P.+pacificus', 'db': 'priPac1', 'wp_target': ['genome']},
+    "Chrysemys picta": {'org': 'Painted+turtle', 'db': 'chrPic1', 'wp_target': ['genome']},
+    "Ailuropoda melanoleuca": {'org': 'Panda', 'db': 'ailMel1', 'wp_target': ['genome']},
+    "Sus scrofa": {'org': 'Pig', 'db': 'susScr11', 'wp_target': ['genome']},
+    "Ochotona princeps": {'org': 'Pika', 'db': 'ochPri3', 'wp_target': ['genome']},
+    "Ornithorhynchus anatinus": {'org': 'Platypus', 'db': 'ornAna2', 'wp_target': ['genome']},
+    "Nasalis larvatus": {'org': 'Proboscis+monkey', 'db': 'nasLar1', 'wp_target': ['genome']},
+    "Oryctolagus cuniculus": {'org': 'Rabbit', 'db': 'oryCun2', 'wp_target': ['genome']},
+    "Rattus norvegicus": {'org': 'Rat', 'db': 'rn7', 'wp_target': ['genome']},
+    "Macaca mulatta": {'org': 'Rhesus', 'db': 'rheMac10', 'wp_target': ['genome']},
+    "Procavia capensis": {'org': 'Rock+hyrax', 'db': 'proCap1', 'wp_target': ['genome']},
+    "Saccharomyces cerevisiae": {'org': 'S.+cerevisiae', 'db': 'sacCer3', 'wp_target': ['genome']},
+    "Strongylocentrotus purpuratus": {'org': 'S.+purpuratus', 'db': 'strPur2', 'wp_target': ['genome']},
+    "Aplysia californica": {'org': 'Sea+hare', 'db': 'aplCal1', 'wp_target': ['genome']},
+    "Enhydra lutris nereis": {'org': 'Southern+sea+otter', 'db': 'enhLutNer1', 'wp_target': ['genome']},
+    "Ovis aries": {'org': 'Sheep', 'db': 'oviAri4', 'wp_target': ['genome']},
+    "Sorex araneus": {'org': 'Shrew', 'db': 'sorAra2', 'wp_target': ['genome']},
+    "Bradypus": {'org': 'Sloth', 'db': 'choHof1', 'wp_target': ['genome']},
+    "Sciurus": {'org': 'Squirrel', 'db': 'speTri2', 'wp_target': ['genome']},
+    "Saimiri sciureus": {'org': 'Squirrel+monkey', 'db': 'saiBol1', 'wp_target': ['genome']},
+    "Gasterosteus aculeatus": {'org': 'Stickleback', 'db': 'gasAcu1', 'wp_target': ['genome']},
+    "Tarsius syrichta": {'org': 'Tarsier', 'db': 'tarSyr2', 'wp_target': ['genome']},
+    "Sarcophilus harrisii": {'org': 'Tasmanian+devil', 'db': 'sarHar1', 'wp_target': ['genome']},
+    "Tenrec ecaudatus": {'org': 'Tenrec', 'db': 'echTel2', 'wp_target': ['genome']},
+    "Tetraodon nigroviridis": {'org': 'Tetraodon', 'db': 'tetNig2', 'wp_target': ['genome']},
+    "Nanorana parkeri": {'org': 'Tibetan+frog', 'db': 'nanPar1', 'wp_target': ['genome']},
+    "Tupaia": {'org': 'Tree+shrew', 'db': 'tupBel1', 'wp_target': ['genome']},
+    "Meleagris gallopavo": {'org': 'Turkey', 'db': 'melGal5', 'wp_target': ['genome']},
+    "Severe acute respiratory syndrome coronavirus 2": {'org': 'SARS-CoV-2', 'db': 'wuhCor1', 'wp_target': ['genome']},
+    "Monkeypox virus": {'org': 'Monkeypox+virus', 'db': 'mpxvRivers', 'wp_target': ['genome']},
+    "Macropus": {'org': 'Wallaby', 'db': 'macEug2', 'wp_target': ['genome']},
+    "Ceratotherium simum": {'org': 'White+rhinoceros', 'db': 'cerSim1', 'wp_target': ['genome']},
+    "Xenopus tropicalis": {'org': 'X.+tropicalis', 'db': 'xenTro10', 'wp_target': ['genome']},
+    "Taeniopygia guttata": {'org': 'Zebra+finch', 'db': 'taeGut2', 'wp_target': ['genome']},
+    "Danio rerio": {'org': 'Zebrafish', 'db': 'danRer11', 'wp_target': ['genome']},
+}
+
+
 class NCBIdna:
     def __init__(self, gene_id, species=None, genome_version="Current", all_slice_forms=None):
         self.gene_id = gene_id
@@ -359,7 +472,7 @@ class NCBIdna:
         return complement_sequence
 
     @staticmethod
-    def design_primers(variant, gene_name, sequence, exons, nb_primers):
+    def design_primers(variant, gene_name, species, sequence, exons, nb_primers, product_size_settings, ucsc_validation=False, only_validated=False):
         try:
             simplified_sequence = "".join(sequence[start:end] for start, end in exons)
 
@@ -409,7 +522,7 @@ class NCBIdna:
 
                 # General settings for pairs
                 'PRIMER_NUM_RETURN': 1,  # Maximum number of pairs returned
-                'PRIMER_PRODUCT_SIZE_RANGE': [[60, 120]],  # Product size range
+                'PRIMER_PRODUCT_SIZE_RANGE': [product_size_settings],  # Product size range
 
                 # Enable selection of internal hybridization oligos
                 'PRIMER_PICK_INTERNAL_OLIGO': 0,  # 1 to enable, 0 to disable
@@ -491,8 +604,6 @@ class NCBIdna:
 
                             primer_results = primer3.bindings.design_primers(primer3_input, primer3_params)
 
-                            # print(primer_results)
-
                             if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results[
                                 'PRIMER_PAIR_NUM_RETURNED'] > 0:
                                 for k in range(primer_results['PRIMER_PAIR_NUM_RETURNED']):
@@ -520,6 +631,20 @@ class NCBIdna:
 
                                         amplicon_size = right_position - left_position + 1
                                         amplicon_size_abs = right_absolute - left_absolute + 1
+
+                                        if species in ucsc_species.keys() and ucsc_validation is True:
+                                            org = ucsc_species[species]["org"]
+                                            db = ucsc_species[species]["db"]
+                                            wp_targets = ucsc_species[species]["wp_target"]
+                                            validation_relative, validation_absolute = NCBIdna.fetch_ucsc_pcr_results(
+                                                org, db, wp_targets, left_seq, right_seq,
+                                                amplicon_size_abs, product_size_settings[1])
+                                        else:
+                                            validation_relative, validation_absolute = None, None
+
+                                        if only_validated is True:
+                                            if not validation_relative and not validation_absolute:
+                                                continue
 
                                         primers.append({
                                             'left_primer': {
@@ -549,6 +674,8 @@ class NCBIdna:
                                                 'template_strand': 'Minus',
                                                 'exon_junction': None
                                             },
+                                            'validation_relative': validation_relative,
+                                            'validation_absolute': validation_absolute,
                                             'amplicon_size': amplicon_size,
                                             'amplicon_size_abs': amplicon_size_abs
                                         })
@@ -571,7 +698,6 @@ class NCBIdna:
         except Exception as e:
             print(e)
 
-
     @staticmethod
     def cumsum(iterable):
         total = 0
@@ -586,3 +712,76 @@ class NCBIdna:
                 offset = position - cumulative_lengths[i]
                 return start + offset
         return -1
+
+    @staticmethod
+    def fetch_ucsc_pcr_results(org, db, wp_targets, wp_f, wp_r, amplicon_size_abs, max_product_size):
+        validation_relative = None
+        validation_absolute = None
+
+        for wp_target in wp_targets:
+            if wp_target == "genome":
+                amplicon_size = amplicon_size_abs + 100
+            else:
+                amplicon_size = 100 + max_product_size
+
+            base_url = "https://genome.ucsc.edu/cgi-bin/hgPcr"
+            params = {
+                "org": org,
+                "db": db,
+                "wp_target": wp_target,
+                "wp_f": wp_f,
+                "wp_r": wp_r,
+                "Submit": "Submit",
+                "wp_size": amplicon_size * 2,
+                "wp_perfect": 15,
+                "wp_good": 15,
+                "boolshad.wp_flipReverse": 0,
+                "wp_append": "on",
+                "boolshad.wp_append": 0,
+            }
+
+            response = requests.get(base_url, params=params)
+
+            if response.status_code != 200:
+                if wp_target == "genome":
+                    validation_absolute = f"Error {response.status_code}"
+                else:
+                    validation_relative = f"Error {response.status_code}"
+
+            soup = BeautifulSoup(response.text, "html.parser")
+            result_section = soup.find("pre")
+
+            if result_section:
+                results = result_section.text.strip().split("\n")
+                fragment_sizes = []
+
+                for line in results:
+                    match = re.search(r'(\d+)bp', line)
+                    if match:
+                        size = int(match.group(1))
+                        if size <= amplicon_size:
+                            fragment_sizes.append(size)
+
+                if not fragment_sizes:
+                    if wp_target == "genome":
+                        validation_absolute = "Not found"
+                    else:
+                        validation_relative = "Not found"
+
+                if all(size == fragment_sizes[0] for size in fragment_sizes):
+                    if wp_target == "genome":
+                        validation_absolute = True
+                    else:
+                        validation_relative = True
+                else:
+                    if wp_target == "genome":
+                        validation_absolute = False
+                    else:
+                        validation_relative = False
+            else:
+                if wp_target == "genome":
+                    validation_absolute = "Not found"
+                else:
+                    validation_relative = "Not found"
+
+        return validation_relative, validation_absolute

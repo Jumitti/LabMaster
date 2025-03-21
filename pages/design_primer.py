@@ -15,6 +15,166 @@ from pages.design_primer_API import NCBIdna
 from utils.page_config import page_config
 
 
+ucsc_species = [
+    "None",
+    "Homo sapiens",
+    "Mus musculus",
+    "Anopheles gambiae",
+    "Apis mellifera",
+    "Xenopus laevis",
+    "Vicugna pacos",
+    "Alligator mississippiensis",
+    "Dasypus novemcinctus",
+    "Gadus morhua",
+    "Papio anubis",
+    "Bison bison",
+    "Pan paniscus",
+    "Apteryx australis",
+    "Melopsittacus undulatus",
+    "Otolemur garnettii",
+    "Caenorhabditis brenneri",
+    "Caenorhabditis briggsae",
+    "Caenorhabditis elegans",
+    "Ciona intestinalis",
+    "Caenorhabditis japonica",
+    "Caenorhabditis remanei",
+    "Felis catus",
+    "Gallus gallus",
+    "Pan troglodytes",
+    "Cricetulus griseus",
+    "Manis pentadactyla",
+    "Latimeria chalumnae",
+    "Bos taurus",
+    "Macaca fascicularis",
+    "Drosophila ananassae",
+    "Drosophila erecta",
+    "Drosophila grimshawi",
+    "Drosophila melanogaster",
+    "Drosophila mojavensis",
+    "Drosophila persimilis",
+    "Drosophila pseudoobscura",
+    "Drosophila sechellia",
+    "Drosophila simulans",
+    "Drosophila virilis",
+    "Drosophila yakuba",
+    "Canis lupus familiaris",
+    "Delphinidae",
+    "Zaire ebolavirus",
+    "Loxodonta africana",
+    "Callorhinchus milii",
+    "Mustela putorius furo",
+    "Takifugu rubripes",
+    "Thamnophis sirtalis",
+    "Hylobates",
+    "Aquila chrysaetos",
+    "Rhinopithecus roxellana",
+    "Gorilla gorilla",
+    "Chlorocebus sabaeus",
+    "Cavia porcellus",
+    "Neomonachus schauinslandi",
+    "Erinaceus europaeus",
+    "Equus caballus",
+    "Dipodomys",
+    "Petromyzon marinus",
+    "Branchiostoma",
+    "Sceloporus",
+    "Cynocephalus variegatus",
+    "Trichechus manatus",
+    "Callithrix jacchus",
+    "Oryzias latipes",
+    "Geospiza fortis",
+    "Pteropus",
+    "Myotis lucifugus",
+    "Balaenoptera acutorostrata",
+    "Microcebus murinus",
+    "Heterocephalus glaber",
+    "Oreochromis niloticus",
+    "Monodelphis domestica",
+    "Pongo pygmaeus",
+    "Pristionchus pacificus",
+    "Chrysemys picta",
+    "Ailuropoda melanoleuca",
+    "Sus scrofa",
+    "Ochotona princeps",
+    "Ornithorhynchus anatinus",
+    "Nasalis larvatus",
+    "Oryctolagus cuniculus",
+    "Rattus norvegicus",
+    "Macaca mulatta",
+    "Procavia capensis",
+    "Saccharomyces cerevisiae",
+    "Strongylocentrotus purpuratus",
+    "Aplysia californica",
+    "Enhydra lutris nereis",
+    "Ovis aries",
+    "Sorex araneus",
+    "Bradypus",
+    "Sciurus",
+    "Saimiri sciureus",
+    "Gasterosteus aculeatus",
+    "Tarsius syrichta",
+    "Sarcophilus harrisii",
+    "Tenrec ecaudatus",
+    "Tetraodon nigroviridis",
+    "Nanorana parkeri",
+    "Tupaia",
+    "Meleagris gallopavo",
+    "Severe acute respiratory syndrome coronavirus 2",
+    "Monkeypox virus",
+    "Macropus",
+    "Ceratotherium simum",
+    "Xenopus tropicalis",
+    "Taeniopygia guttata",
+    "Danio rerio"
+]
+
+
+def parse_fasta_to_json(fasta_text):
+    lines = fasta_text.strip().split("\n")
+    variants = {}
+    variant_id = 1
+    sequence = ""
+
+    # Dictionnaire en minuscule pour une recherche insensible à la casse
+    ucsc_species_lower = {key.lower(): key for key in ucsc_species}
+
+    for line in lines:
+        if line.startswith(">"):
+            # Sauvegarder l'entrée précédente si elle existe
+            if sequence:
+                variants[variant_id]["sequence"] = sequence.upper()
+                variants[variant_id]["normalized_exon_coords"] = [[0, len(sequence)]]
+                variant_id += 1
+
+            # Extraire le nom du gène et l'espèce s'il y a un "|"
+            parts = line[1:].strip().split("|")
+            gene_name = parts[0].strip()
+            species_name = parts[1].strip() if len(parts) > 1 else ""
+
+            # Vérifier si l'espèce correspond à une clé UCSC
+            species = ucsc_species_lower.get(species_name.lower(), None)
+
+            # Créer une nouvelle entrée
+            variants[variant_id] = {
+                "gene_name": gene_name,
+                "species": species,
+                "sequence": "",
+                "normalized_exon_coords": [],
+            }
+
+            sequence = ""  # Réinitialiser la séquence pour la prochaine entrée
+
+        else:
+            sequence += line.strip()
+
+    # Ajouter la dernière entrée après la boucle
+    if sequence:
+        variants[variant_id]["sequence"] = sequence.upper()
+        variants[variant_id]["normalized_exon_coords"] = [[0, len(sequence)]]
+
+    return variants
+
+
 def graphique(exons, primers, normalization=False):
     if normalization is True:
         adjusted_exons = []
@@ -123,12 +283,11 @@ def graphique(exons, primers, normalization=False):
 # Page config
 page_config()
 
-st.subheader(':blue[Step 1] Promoter and Terminator Extractor')
+st.subheader('Genes info extraction')
 colextract1, colextract2, colextract3 = st.columns([0.5, 1.5, 1.5], gap="small")
 
 # Extraction of DNA sequence
 with colextract1:
-    st.info("💡 If you have a FASTA sequence, go to :blue[**Step 2**]")
 
     all_variants = {}
     upstream_entry = []
@@ -154,7 +313,7 @@ with colextract2:
         all_slice_form = col2.toggle(label='All variants')
 
         # Run Promoter Finder
-        if st.button(f"🧬 :blue[**Step 1.5**] Extraction...", help='(~5sec/gene)'):
+        if st.button(f"🧬 :blue[**Step 1.3**] Extraction...", help='(~5sec/gene)'):
             response = requests.get(
                 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi?db=gene&term=nos2[Gene%20Name]+AND+human[Organism]&retmode=json&rettype=xml')
 
@@ -320,78 +479,77 @@ with colextract2:
                 st.warning("⚠ NCBI servers are under maintenance or have an error")
 
 with colextract3:
-    st.markdown("🔹 :blue[**Step 2.1**] Sequences:", help='Copy: Click in sequence, CTRL+A, CTRL+C')
+    default_fasta = """>ExampleGene1 | Homo sapiens\ntacgcaatgtcatgactgcgtttatagatagataaaaagcgtgcgattactaaacgcggatggcgtgcgcactatttcatcggttctgaaatctccatccaatcaaccttactcagacagctcccccgtgacacgggctaccacattcaggtggcttgtaatacatgggtataacatcaatagttcgtgccgcaatacttcgcgggggtacgggtaagtgacgaaagaagtaactctcccactcggagaatctacggtagttgcgcgtttttaattttcatctttgtcctgccagcaatgtacacaccgcaaagtctgtccaagtgcatgctagaccgggtgtgcaccctagggtagagcacggagttgatttcgggcgtgagatcaaggccaaggaggaagtaagcatcgtatctctgtctaatcattgcaggaagggtgcacagcttaggttccccaacaatgcttttagcatgatagctgtctctttgtggactgta\n>ExampleGene2\nttcctctttcaccagctttccatccccgcgacatggcggatcaaaactctggcaaagattaccagtcgaaggcatctcgagatggagatggtaagtttttgtcatacgacccaaacccggaggagacacgttagaaaatccacgacttcttcgaagactaagtggatgagtacaggtcgggaagagtcgactaccctaggatcccgcgtgcggtctacatgtcatgatcctccatgggcccaggccccgtagtgcgactgcggttaattgcatctacgaattttacacttgcgtttaagaccggacgccgggtttctaagtaaaagtttggctatcgacattatttttttaggggcaccgtatcggattccaatgggtggctggattctcagtgaatctccgtagttcgggaaatcactcaggaatgctaatcatccagaatggaaacgtggtaaaagactgccctgcttccctcttttacctcaagaaacaggggcggg"""
 
-    if 'all_variants' not in st.session_state:
-        all_variants = ''
-        st.session_state['all_variants'] = all_variants
-    if len(st.session_state['all_variants']) > 0:
-        output = st.json(st.session_state['all_variants'] if len(st.session_state['all_variants']) > 0 else {'Empty'}, expanded=False)
+    st.markdown('**🔹 :blue[Alternative 1.1]** Enter a DNA sequence in FASTA format (required):',)
+    with st.expander("📌 How to write a FASTA file:"):
+        st.markdown("Each entry should follow this structure:")
 
-        current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        st.download_button(label="💾 Download (.json)", data=json.dumps(st.session_state['all_variants'], indent=4),
-                           file_name=f"Sequences_{current_date_time}.json", mime="application/json")
-    else:
-        st.warning('You have not extracted any information')
+        st.code(""">GeneName or ID or other | Species\nATGCATGCATGC""", language="plaintext")
 
-# Zone de texte pour saisir une séquence FASTA
-default_fasta = """>ExampleGene1
-ATGCGTACGTAGCTAGCTAGCTAGCTAGCTAGCTA
->ExampleGene2
-CGTACGTAGCTAGCTAGCTAGCTAGCTAGCTAGCTAG
-"""
+        st.markdown("For example:")
+        st.code(""">PRKN | Homo sapiens\nATGCGTGCATGCGTGCATGCGTGC""", language="plaintext")
 
+    fasta_input = st.text_area(
+        "Enter a DNA sequence in FASTA format (required):",
+        height=200,
+        value=default_fasta, label_visibility="collapsed"
+    )
 
-fasta_input = st.text_area(
-    "Enter a DNA sequence in FASTA format (required):",
-    height=200,
-    value=default_fasta
-)
+    if st.button("**🔹 :blue[Alternative 1.2]** Add your sequences"):
+        if fasta_input.strip():
+            try:
+                variants = parse_fasta_to_json(fasta_input)
 
-
-def parse_fasta_to_json(fasta_text):
-    lines = fasta_text.strip().split("\n")
-    variants = {}
-    variant_id = 1
-    gene_name = None
-    sequence = ""
-
-    for line in lines:
-        if line.startswith(">"):
-            if gene_name and sequence:
-                variants[variant_id] = {
-                    "gene_name": gene_name,
-                    "sequence": sequence.upper(),
-                    "normalized_exon_coords": [[0, len(sequence)]],
-                }
-                variant_id += 1
-            gene_name = line[1:].strip()
-            sequence = ""
+                st.session_state['all_variants'] = variants
+                st.success(f"{len(variants)} sequence(s) added successfully!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Error parsing FASTA: {e}")
         else:
-            sequence += line.strip()
+            st.error("Please provide a valid FASTA sequence.")
 
-    if gene_name and sequence:
-        variants[variant_id] = {
-            "gene_name": gene_name,
-            "sequence": sequence.upper(),
-            "normalized_exon_coords": [[0, len(sequence)]],
-        }
-
-    return variants
+st.markdown("🔹 :blue[**Sequences added**]")
+st.markdown("You can change the species if necessary for the validation of primers via UCSC PCR in-Silico. Use 'None' if species isn't known")
 
 
-if st.button("Add Sequence"):
-    if fasta_input.strip():
-        try:
-            variants = parse_fasta_to_json(fasta_input)
+if 'all_variants' not in st.session_state:
+    st.session_state['all_variants'] = {}
 
-            st.session_state['all_variants'] = variants
-            st.success(f"{len(variants)} sequence(s) added successfully!")
-            st.rerun()
-        except Exception as e:
-            st.error(f"Error parsing FASTA: {e}")
-    else:
-        st.error("Please provide a valid FASTA sequence.")
+if st.session_state['all_variants']:
+    df = pd.DataFrame.from_dict(st.session_state['all_variants'], orient="index").reset_index()
+    df.rename(columns={"index": "N°/Name"}, inplace=True)
+
+    if "species" not in df.columns:
+        df["species"] = ""
+
+    column_order = list(df.columns)
+    if "species" in column_order and "exon_coords" in column_order:
+        column_order.remove("species")
+        exon_index = column_order.index("exon_coords")
+        column_order.insert(exon_index, "species")
+        df = df[column_order]
+
+    column_config = {
+        "species": st.column_config.SelectboxColumn("Species", options=ucsc_species, required=True)
+    }
+    for col in df.columns:
+        if col != "species":
+            column_config[col] = st.column_config.Column(col, disabled=True)
+
+    df = st.data_editor(df, column_config=column_config, use_container_width=True, hide_index=True)
+
+    updated_json = df.set_index("N°/Name").to_dict(orient="index")
+    st.json(updated_json, expanded=False)
+    current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    st.download_button(
+        label="💾 Download (.json)",
+        data=json.dumps(updated_json, indent=4),
+        file_name=f"Sequences_{current_date_time}.json",
+        mime="application/json"
+    )
+else:
+    st.warning('You have not extracted any information')
 
 if "min_amplicon_size" not in st.session_state:
     st.session_state["min_amplicon_size"] = 80
@@ -401,10 +559,19 @@ if "max_amplicon_size" not in st.session_state:
 
 nb_primers = st.number_input('Number of primers', value=10, min_value=1, step=1)
 st.session_state["min_amplicon_size"] = st.number_input('Minimum amplicon size', value=60, min_value=10,
-                                    max_value=st.session_state["max_amplicon_size"] - 10, step=1)
+                                                        max_value=st.session_state["max_amplicon_size"] - 10, step=1)
 
 st.session_state["max_amplicon_size"] = st.number_input('Maximum amplicon size', value=250,
-                                    min_value=st.session_state["min_amplicon_size"] + 10, step=1)
+                                                        min_value=st.session_state["min_amplicon_size"] + 10, step=1)
+
+if 'ucsc_validation' not in st.session_state:
+    st.session_state["ucsc_validation"] = False
+if 'only_validated' not in st.session_state:
+    st.session_state["only_validated"] = False
+
+st.session_state["ucsc_validation"] = st.toggle("UCSC validation", False)
+if st.session_state["ucsc_validation"] is True:
+    st.session_state["only_validated"] = st.toggle("Display only validated", False)
 
 
 if st.button('Run design primers'):
@@ -415,11 +582,10 @@ if st.button('Run design primers'):
             progress_bar = stqdm(enumerate(st.session_state['all_variants'].items()),
                                  total=len(st.session_state['all_variants']),
                                  desc="Initializing")
-
             for i, (variant, data) in progress_bar:
                 progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
 
-                primers = NCBIdna.design_primers(variant, data['gene_name'], data['sequence'], data['normalized_exon_coords'], nb_primers)
+                primers = NCBIdna.design_primers(variant, data['gene_name'], data['species'], data['sequence'], data['normalized_exon_coords'], nb_primers, [st.session_state["min_amplicon_size"], st.session_state["max_amplicon_size"]], st.session_state["ucsc_validation"], st.session_state["only_validated"])
 
                 if len(primers) > 0:
                     for idx, primer_set in enumerate(primers):
@@ -427,6 +593,7 @@ if st.button('Run design primers'):
                             'Gene': str(variant) + data['gene_name'],
                             'Pair': idx + 1,
                             'Product Size (bp)': primer_set['amplicon_size'],
+                            'Validated': primer_set['validation_relative'],
                             "For. Pr.(5'->3')": primer_set['left_primer']['sequence'],
                             'For. Len. (bp)': primer_set['left_primer']['length'],
                             'For. Pos.': primer_set['left_primer']['position'],
@@ -443,7 +610,8 @@ if st.button('Run design primers'):
                             'Rev. GC%': primer_set['right_primer']['gc_percent'],
                             'Rev. Self Compl.': primer_set['right_primer']['self_complementarity'],
                             "Rev. Self 3' Compl.": primer_set['right_primer']['self_3prime_complementarity'],
-                            'Product Size Abs. (bp)': primer_set['amplicon_size_abs']
+                            'Product Size Abs. (bp)': primer_set['amplicon_size_abs'],
+                            'Validated Abs.': primer_set['validation_absolute'],
                         })
 
                     with st.expander(f'Primers graph location for {variant} {data["gene_name"]}', expanded=False):
@@ -459,7 +627,12 @@ if st.button('Run design primers'):
                     st.warning(f"No primers were designed for {variant} {data['gene_name']}")
 
             if primers_result:
-                st.dataframe(pd.DataFrame(primers_result), hide_index=True)
+                all_columns = list(primers_result[0].keys())
+                abs_columns = [col for col in all_columns if "Abs." in col]
+                other_columns = [col for col in all_columns if col not in abs_columns]
+                ordered_columns = other_columns + abs_columns
+                df = pd.DataFrame(primers_result)[ordered_columns]
+                st.dataframe(df, hide_index=True)
 
                 csv_file = pd.DataFrame(primers_result).to_csv(index=False)
                 excel_file = io.BytesIO()
@@ -475,119 +648,5 @@ if st.button('Run design primers'):
                                    file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
     except Exception as e:
         print(e)
-
-
-
-ucsc_species = {
-    "Homo sapiens": {"uscs_species": "Human"},
-    "Mus musculus": {"uscs_species": "Mouse"},
-    "Anopheles gambiae": {"uscs_species": "A. gambiae"},
-    "Apis mellifera": {"uscs_species": "A. mellifera"},
-    "Xenopus laevis": {"uscs_species": "African clawed frog"},
-    "Vicugna pacos": {"uscs_species": "Alpaca"},
-    "Alligator mississippiensis": {"uscs_species": "American alligator"},
-    "Dasypus novemcinctus": {"uscs_species": "Armadillo"},
-    "Gadus morhua": {"uscs_species": "Atlantic cod"},
-    "Papio anubis": {"uscs_species": "Baboon"},
-    "Bison bison": {"uscs_species": "Bison"},
-    "Pan paniscus": {"uscs_species": "Bonobo"},
-    "Apteryx australis": {"uscs_species": "Brown kiwi"},
-    "Melopsittacus undulatus": {"uscs_species": "Budgerigar"},
-    "Otolemur garnettii": {"uscs_species": "Bushbaby"},
-    "Caenorhabditis brenneri": {"uscs_species": "C. brenneri"},
-    "Caenorhabditis briggsae": {"uscs_species": "C. briggsae"},
-    "Caenorhabditis elegans": {"uscs_species": "C. elegans"},
-    "Ciona intestinalis": {"uscs_species": "C. intestinalis"},
-    "Caenorhabditis japonica": {"uscs_species": "C. japonica"},
-    "Caenorhabditis remanei": {"uscs_species": "C. remanei"},
-    "Felis catus": {"uscs_species": "Cat"},
-    "Gallus gallus": {"uscs_species": "Chicken"},
-    "Pan troglodytes": {"uscs_species": "Chimp"},
-    "Cricetulus griseus": {"uscs_species": "Chinese hamster"},
-    "Manis pentadactyla": {"uscs_species": "Chinese pangolin"},
-    "Latimeria chalumnae": {"uscs_species": "Coelacanth"},
-    "Bos taurus": {"uscs_species": "Cow"},
-    "Macaca fascicularis": {"uscs_species": "Crab-eating macaque"},
-    "Drosophila ananassae": {"uscs_species": "D. ananassae"},
-    "Drosophila erecta": {"uscs_species": "D. erecta"},
-    "Drosophila grimshawi": {"uscs_species": "D. grimshawi"},
-    "Drosophila melanogaster": {"uscs_species": "D. melanogaster"},
-    "Drosophila mojavensis": {"uscs_species": "D. mojavensis"},
-    "Drosophila persimilis": {"uscs_species": "D. persimilis"},
-    "Drosophila pseudoobscura": {"uscs_species": "D. pseudoobscura"},
-    "Drosophila sechellia": {"uscs_species": "D. sechellia"},
-    "Drosophila simulans": {"uscs_species": "D. simulans"},
-    "Drosophila virilis": {"uscs_species": "D. virilis"},
-    "Drosophila yakuba": {"uscs_species": "D. yakuba"},
-    "Canis lupus familiaris": {"uscs_species": "Dog"},
-    "Delphinidae": {"uscs_species": "Dolphin"},
-    "Zaire ebolavirus": {"uscs_species": "Ebola virus"},
-    "Loxodonta africana": {"uscs_species": "Elephant"},
-    "Callorhinchus milii": {"uscs_species": "Elephant shark"},
-    "Mustela putorius furo": {"uscs_species": "Ferret"},
-    "Takifugu rubripes": {"uscs_species": "Fugu"},
-    "Thamnophis sirtalis": {"uscs_species": "Garter snake"},
-    "Hylobates": {"uscs_species": "Gibbon"},
-    "Aquila chrysaetos": {"uscs_species": "Golden eagle"},
-    "Rhinopithecus roxellana": {"uscs_species": "Golden snub-nosed monkey"},
-    "Gorilla gorilla": {"uscs_species": "Gorilla"},
-    "Chlorocebus sabaeus": {"uscs_species": "Green monkey"},
-    "Cavia porcellus": {"uscs_species": "Guinea pig"},
-    "Neomonachus schauinslandi": {"uscs_species": "Hawaiian monk seal"},
-    "Erinaceus europaeus": {"uscs_species": "Hedgehog"},
-    "Equus caballus": {"uscs_species": "Horse"},
-    "Dipodomys": {"uscs_species": "Kangaroo rat"},
-    "Petromyzon marinus": {"uscs_species": "Lamprey"},
-    "Branchiostoma": {"uscs_species": "Lancelet"},
-    "Sceloporus": {"uscs_species": "Lizard"},
-    "Cynocephalus variegatus": {"uscs_species": "Malayan flying lemur"},
-    "Trichechus manatus": {"uscs_species": "Manatee"},
-    "Callithrix jacchus": {"uscs_species": "Marmoset"},
-    "Oryzias latipes": {"uscs_species": "Medaka"},
-    "Geospiza fortis": {"uscs_species": "Medium ground finch"},
-    "Pteropus": {"uscs_species": "Megabat"},
-    "Myotis lucifugus": {"uscs_species": "Little brown bat"},
-    "Balaenoptera acutorostrata": {"uscs_species": "Minke whale"},
-    "Microcebus murinus": {"uscs_species": "Mouse lemur"},
-    "Heterocephalus glaber": {"uscs_species": "Naked mole-rat"},
-    "Oreochromis niloticus": {"uscs_species": "Nile tilapia"},
-    "Monodelphis domestica": {"uscs_species": "Opossum"},
-    "Pongo pygmaeus": {"uscs_species": "Orangutan"},
-    "Pristionchus pacificus": {"uscs_species": "P. pacificus"},
-    "Chrysemys picta": {"uscs_species": "Painted turtle"},
-    "Ailuropoda melanoleuca": {"uscs_species": "Panda"},
-    "Sus scrofa": {"uscs_species": "Pig"},
-    "Ochotona princeps": {"uscs_species": "Pika"},
-    "Ornithorhynchus anatinus": {"uscs_species": "Platypus"},
-    "Nasalis larvatus": {"uscs_species": "Proboscis monkey"},
-    "Oryctolagus cuniculus": {"uscs_species": "Rabbit"},
-    "Rattus norvegicus": {"uscs_species": "Rat"},
-    "Macaca mulatta": {"uscs_species": "Rhesus"},
-    "Procavia capensis": {"uscs_species": "Rock hyrax"},
-    "Saccharomyces cerevisiae": {"uscs_species": "S. cerevisiae"},
-    "Strongylocentrotus purpuratus": {"uscs_species": "S. purpuratus"},
-    "Aplysia californica": {"uscs_species": "Sea hare"},
-    "Enhydra lutris nereis": {"uscs_species": "Southern sea otter"},
-    "Ovis aries": {"uscs_species": "Sheep"},
-    "Sorex araneus": {"uscs_species": "Shrew"},
-    "Bradypus": {"uscs_species": "Sloth"},
-    "Sciurus": {"uscs_species": "Squirrel"},
-    "Saimiri sciureus": {"uscs_species": "Squirrel monkey"},
-    "Gasterosteus aculeatus": {"uscs_species": "Stickleback"},
-    "Tarsius syrichta": {"uscs_species": "Tarsier"},
-    "Sarcophilus harrisii": {"uscs_species": "Tasmanian devil"},
-    "Tenrec ecaudatus": {"uscs_species": "Tenrec"},
-    "Tetraodon nigroviridis": {"uscs_species": "Tetraodon"},
-    "Nanorana parkeri": {"uscs_species": "Tibetan frog"},
-    "Tupaia": {"uscs_species": "Tree shrew"},
-    "Meleagris gallopavo": {"uscs_species": "Turkey"},
-    "Severe acute respiratory syndrome coronavirus 2": {"uscs_species": "SARS-CoV-2"},
-    "Monkeypox virus": {"uscs_species": "Monkeypox virus"},
-    "Macropus": {"uscs_species": "Wallaby"},
-    "Ceratotherium simum": {"uscs_species": "White rhinoceros"},
-    "Xenopus tropicalis": {"uscs_species": "X. tropicalis"},
-    "Taeniopygia guttata": {"uscs_species": "Zebra finch"},
-    "Danio rerio": {"uscs_species": "Zebrafish"}
-}
 
 
