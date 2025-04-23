@@ -163,42 +163,50 @@ ucsc_species = {
 
 
 class NCBIdna:
-    def __init__(self, gene_id, species=None, genome_version="Current", all_slice_forms=None):
+    def __init__(self, gene_id, species=None, seq_type="rna", upstream=0, downstream=0, genome_version="current",
+                 all_slice_forms=None):
         self.gene_id = gene_id
         self.species = species if species is not None else "human"
+        self.seq_type = seq_type if seq_type is not None else "rna"
+        self.upstream = upstream if upstream is not None and seq_type in ["promoter", "terminator"] else None
+        self.downstream = downstream if downstream is not None and seq_type in ["promoter", "terminator"] else None
+        self.genome_version = genome_version if genome_version is not None else "current"
         self.all_slice_forms = True if all_slice_forms is True else False
 
     @staticmethod
     def XMNM_to_gene_ID(variant):
         global headers
-        uids = f"https://www.ncbi.nlm.nih.gov/nuccore/{variant}"
 
-        response = requests.get(uids, headers=headers)
+        while True:
+            uids = f"https://www.ncbi.nlm.nih.gov/nuccore/{variant}"
 
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.text, 'html.parser')
+            response = requests.get(uids, headers=headers)
 
-            pattern = r"list_uids=(\d+)"
-            matches = re.search(pattern, str(soup))
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, 'html.parser')
 
-            if matches:
-                entrez_id = matches.group(1)
+                pattern = r"list_uids=(\d+)"
+                matches = re.search(pattern, str(soup))
+
+                if matches:
+                    entrez_id = matches.group(1)
+                else:
+                    entrez_id = "UIDs not founds"
+
+                return entrez_id
             else:
-                entrez_id = "UIDs not founds"
-        else:
-            entrez_id = "Error during process of retrieving UIDs"
-
-        return entrez_id
+                print(bcolors.FAIL + "Error during process of retrieving UIDs" + bcolors.ENDC)
 
     # Sequence extractor
     def find_sequences(self):
         time.sleep(1)
-        if self.gene_id.startswith('XM_') or self.gene_id.startswith('NM_') or self.gene_id.startswith(
-                'XR_') or self.gene_id.startswith('NR_'):
+        if self.gene_id.upper().startswith(('XM_', 'NM_', 'XR_', 'NR_', 'YP_')):
+            if '.' in self.gene_id:
+                self.gene_id = self.gene_id.split('.')[0]
             entrez_id = NCBIdna.XMNM_to_gene_ID(self.gene_id)
-            if entrez_id == 'UIDs not founds' or entrez_id == 'Error during process of retrieving UIDs':
+            if entrez_id == 'UIDs not founds':
                 result_promoter = f'Please verify {self.gene_id} variant'
-                return result_promoter
+                return result_promoter, result_promoter
         else:
             if self.gene_id.isdigit():
                 entrez_id = self.gene_id
@@ -208,9 +216,26 @@ class NCBIdna:
                 if entrez_id == "Error 200":
                     return entrez_id, message
 
-        all_variants, message = NCBIdna.all_variant(entrez_id, self.all_slice_forms)
+        all_variants, message = NCBIdna.all_variant(entrez_id, self.genome_version, self.all_slice_forms,
+                                                    self.gene_id if
+                                                    self.gene_id.upper().startswith(('XM_', 'NM_', 'XR_', 'NR_', 'YP_')) else None)
         if "Error 200" not in all_variants:
-            return all_variants, message
+            for nm_id, data in all_variants.items():
+                exon_coords = data.get('exon_coords')
+                # data['upstream'] = self.upstream
+                # data['seq_type'] = self.seq_type
+                sequence = NCBIdna.get_dna_sequence(data.get("entrez_id"), data.get("chraccver"), exon_coords[0][0],
+                                                    exon_coords[-1][1], self.seq_type, self.upstream, self.downstream)
+                if self.seq_type in ['mrna']:
+                    if self.seq_type == 'mrna':
+                        data['sequence'] = "".join(
+                            sequence[start:end + 1] for start, end in data["normalized_exon_coords"])
+                else:
+                    data['sequence'] = sequence
+
+            return all_variants, "OK"
+        else:
+            return all_variants, "Error 200"
 
     @staticmethod
     # Convert gene to ENTREZ_GENE_ID
@@ -250,7 +275,7 @@ class NCBIdna:
 
     @staticmethod
     # Get gene information
-    def all_variant(entrez_id, all_slice_forms=False):
+    def all_variant(entrez_id, genome_version="current", all_slice_forms=False, specific_transcript=None):
         global headers
 
         while True:
@@ -261,14 +286,19 @@ class NCBIdna:
                 response_data = response.json()
                 try:
                     gene_info = response_data['result'][str(entrez_id)]
-                    chraccver = gene_info['genomicinfo'][0]['chraccver']
+                    species_API = gene_info['organism']['scientificname']
+                    gene_name = gene_info['name']
+                    title, chrloc, chraccver, coords = NCBIdna.extract_genomic_info(entrez_id, response_data,
+                                                                                    genome_version, species_API)
+                    chrstart = coords[0]
+                    chrstop = coords[1]
                     print(
-                        bcolors.OKGREEN + f"Response 200: Chromosome {chraccver} found for {entrez_id}: {response.text}" + bcolors.ENDC)
+                        bcolors.OKGREEN + f"Response 200: Chromosome {chrloc} {chraccver} found for {entrez_id}: {response.text}" + bcolors.ENDC)
                     break
 
                 except Exception as e:
                     print(
-                        bcolors.WARNING + f"Response 200: Chromosome not found for {entrez_id}: {response.text} {e} {traceback.print_exc()}" + bcolors.ENDC)
+                        bcolors.WARNING + f"Response 200: Chromosome not found for {entrez_id}: {response.text} {e}" + bcolors.ENDC)
                     all_variants = [("Error 200", None, None, None, None, None)]
                     print(
                         bcolors.WARNING + f"Response 200: Transcript not found(s) for {entrez_id}." + bcolors.ENDC)
@@ -284,6 +314,8 @@ class NCBIdna:
                 time.sleep(random.uniform(0.25, 0.5))
 
         while True:
+            all_variants = {}
+
             url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=gene&id={entrez_id}&retmode=xml"
             response = requests.get(url, headers=headers)
 
@@ -292,8 +324,6 @@ class NCBIdna:
 
                 tv = []
                 variants = []
-                gene_name = []
-                species_API = []
                 chromosome = ""
 
                 for elem in root.iter():
@@ -302,30 +332,37 @@ class NCBIdna:
                             if elem.text not in tv:
                                 tv.append(elem.text)
                     if elem.tag == "Gene-commentary_accession":
-                        if elem.text.startswith('NM_') or elem.text.startswith('XM_') or elem.text.startswith(
-                                'NR_') or elem.text.startswith('XR_'):
+                        if elem.text.upper().startswith(('XM_', 'NM_', 'XR_', 'NR_', 'YP_')):
                             if elem.text not in variants:
                                 variants.append(elem.text)
 
-                    elif elem.tag == "Org-ref_taxname":
-                        species_API = elem.text
-
-                    elif elem.tag == 'Gene-ref_locus':
-                        gene_name = elem.text
+                    if elem.tag == "Gene-commentary_type":
+                        if elem.attrib.get("value") in ["tRNA", "rRNA", "d-segment"]:
+                            all_variants[entrez_id] = {
+                                'entrez_id': entrez_id,
+                                'gene_name': gene_name,
+                                'genomic_info': title,
+                                'chraccver': chraccver,
+                                'strand': "plus" if chrstart < chrstop else "minus",
+                                'exon_coords': [(chrstart if chrstart < chrstop else chrstop,
+                                                 chrstop if chrstart < chrstop else chrstart)],
+                                'normalized_exon_coords': [(0, abs(chrstart - chrstop))],
+                                'species': species_API
+                            }
+                            return all_variants, f"Transcript(s) found(s) for {entrez_id}: {list(all_variants.keys())}"
 
                 for elem in root.iter('Gene-commentary_accession'):
-                    if elem.text.startswith('NC_'):
+                    if elem.text.startswith(("NC_", "NT_")):
                         chromosome = elem.text
                         break
 
                 def calc_exon(root, variants):
-                    all_variants = {}
-                    exon_coords = []
-                    found_variant = False
-                    k_found = False
-                    orientation = ""
 
                     for variant in variants:
+                        exon_coords = []
+                        found_variant = False
+                        k_found = False
+                        orientation = ""
                         for elem in root.iter():
                             if elem.tag == "Gene-commentary_accession" and elem.text != variant:
                                 if elem.text == chromosome:
@@ -348,11 +385,7 @@ class NCBIdna:
                             elif elem.tag == "Org-ref_taxname":
                                 species_API = elem.text
 
-                            elif elem.tag == 'Gene-ref_locus':
-                                gene_name = elem.text
-
                         if exon_coords:
-
                             if orientation == "minus":
                                 exon_coords = [(end, start) for start, end in exon_coords]
 
@@ -362,19 +395,15 @@ class NCBIdna:
                                 (abs(start - first_exon_start), abs(end - first_exon_start)) for start, end in
                                 exon_coords]
 
-                            first_start = exon_coords[0][0]
-                            last_end = exon_coords[-1][1]
-
-                            sequence = NCBIdna.get_dna_sequence(entrez_id, chraccver, first_start, last_end)
-
                             all_variants[variant] = {
                                 'entrez_id': entrez_id,
                                 'gene_name': gene_name,
+                                'genomic_info': title,
                                 'chraccver': chraccver,
+                                'strand': orientation,
                                 'exon_coords': exon_coords,
                                 'normalized_exon_coords': normalized_exon_coords,
-                                'species': species_API,
-                                'sequence': sequence
+                                'species': species_API
                             }
 
                     if len(all_variants) > 0:
@@ -388,8 +417,7 @@ class NCBIdna:
                             "chraccver": None,
                             "exon_coords": None,
                             "normalized_exon_coords": None,
-                            "species": None,
-                            "sequence": None
+                            "species": None
                         }
                         print(
                             bcolors.WARNING + f"Error 200: Transcript not found(s) for {entrez_id}." + bcolors.ENDC)
@@ -400,16 +428,22 @@ class NCBIdna:
                     return all_variants, message
 
                 elif all_slice_forms is False:
+                    variant = None
+
+                    if specific_transcript and re.search(r"\.\d+$", specific_transcript):
+                        specific_transcript = re.sub(r"\.\d+$", "", specific_transcript)
+
                     if len(tv) > 0:
-                        if "transcript variant 1" in tv:
+                        if specific_transcript and specific_transcript in variants:
+                            variant = specific_transcript
+                        elif "transcript variant 1" in tv:
                             associations = dict(zip(tv, variants))
                             variant = associations["transcript variant 1"]
                         else:
                             variant = variants[0]
+
                     elif len(tv) == 0 and len(variants) > 0:
                         variant = variants[0]
-                    else:
-                        variant = None
 
                     if variant is not None:
                         all_variants, message = calc_exon(root, [variant])
@@ -426,17 +460,27 @@ class NCBIdna:
 
     @staticmethod
     # Get DNA sequence
-    def get_dna_sequence(gene_name, chraccver, chrstart, chrstop):
+    def get_dna_sequence(gene_name, chraccver, chrstart, chrstop, seq_type, upstream=2000, downstream=2000):
         global headers
 
-        if chrstop > chrstart:
-            start = chrstart
-            end = chrstop
-        else:
-            start = chrstop
-            end = chrstart
+        if seq_type in ['mrna', 'rna']:
+            # if chrstop > chrstart:
+            #     start = chrstart + 1
+            #     end = chrstop + 1
+            # else:
+            #     start = chrstop + 1
+            #     end = chrstart + 1
+            start = chrstart + 1
+            end = chrstop + 1
 
-        # Requête pour obtenir la séquence d'ADN
+        elif seq_type in ['promoter', 'terminator']:
+            if chrstop > chrstart:
+                start = (chrstart if seq_type == 'promoter' else chrstop) - upstream + 1
+                end = (chrstart if seq_type == 'promoter' else chrstop) + downstream
+            else:
+                start = (chrstart if seq_type == 'promoter' else chrstop) + upstream + 1
+                end = (chrstart if seq_type == 'promoter' else chrstop) - downstream + 2
+
         while True:
             url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=nuccore&id={chraccver}&from={start}&to={end}&rettype=fasta&retmode=text"
             response = requests.get(url, headers=headers)
@@ -450,14 +494,18 @@ class NCBIdna:
                 else:
                     sequence = dna_sequence
 
-                print(f"Response 200: DNA sequence for {gene_name} extracted: {sequence}")
+                print(start, end)
+
+                # print(
+                #     bcolors.OKGREEN + f"Response 200: DNA sequence for {gene_name} extracted: {sequence}" + bcolors.ENDC)
                 return sequence
 
             elif response.status_code == 429:
-                print(f"Error 429: API rate limit exceeded for DNA extraction of {gene_name}, try again.")
+                print(
+                    bcolors.FAIL + f"Error 429: API rate limit exceeded for DNA extraction of {gene_name}, try again." + bcolors.ENDC)
                 time.sleep(random.uniform(0.25, 0.5))
             else:
-                print(f"Error {response.status_code}: {response.text}")
+                print(bcolors.OKGREEN + f"Error {response.status_code}: {response.text}" + bcolors.ENDC)
                 time.sleep(random.uniform(0.25, 0.5))
 
     @staticmethod
@@ -472,9 +520,105 @@ class NCBIdna:
         return complement_sequence
 
     @staticmethod
-    def design_primers(variant, gene_name, species, sequence, exons, nb_primers, product_size_settings, ucsc_validation=False, only_validated=False):
+    def extract_genomic_info(gene_id, gene_info, genome_version, species=None):
+        if gene_info and 'result' in gene_info and gene_id in gene_info['result']:
+            accession_dict = {}
+            gene_details = gene_info['result'][gene_id]
+
+            time.sleep(1)
+
+            location_hist = gene_details.get('locationhist', [])
+            if len(location_hist) == 0:
+                location_hist = gene_details.get('genomicinfo', [])
+
+            for loc in location_hist:
+
+                nc_loc = loc.get('chrloc')
+                nc_accver = loc.get('chraccver')
+                chrstart = loc.get('chrstart')
+                chrstop = loc.get('chrstop')
+
+                if nc_accver:
+                    base_accession = nc_accver
+                    if base_accession not in accession_dict:
+                        accession_dict[base_accession] = (chrstart, chrstop)
+                    else:
+                        existing_start, existing_stop = accession_dict[base_accession]
+                        accession_dict[base_accession] = (min(existing_start, chrstart), max(existing_stop, chrstop))
+
+            nc_dict = accession_dict
+
+            nc_dict = {base_accver: (chrstart, chrstop) for base_accver, (chrstart, chrstop) in nc_dict.items() if
+                       base_accver.startswith(("NC_", "NT_"))}
+
+            if species == "Rattus norvegicus" and 'locationhist' in gene_details:
+                location_hist = gene_details['locationhist']
+                rs_annotations = [
+                    loc for loc in location_hist if loc.get('annotationrelease', "").startswith("RS_")
+                ]
+                rs_annotations.sort(key=lambda x: int(x['annotationrelease'].split('_')[1]))
+                if rs_annotations:
+                    selected_annotation = rs_annotations[-1] if genome_version == "current" else rs_annotations[0]
+                    selected_nc_accver = selected_annotation.get('chraccver')
+                    if selected_nc_accver:
+                        nc_dict = {
+                            selected_nc_accver: (selected_annotation['chrstart'], selected_annotation['chrstop'])
+                        }
+
+            if nc_dict:
+                first_base = next(iter(nc_dict)).split('.')[0]
+                nc_dict = {base_accver: (chrstart, chrstop) for base_accver, (chrstart, chrstop) in nc_dict.items() if
+                           base_accver.split('.')[0] == first_base}
+
+            max_version = -1
+            max_accver = None
+            max_coords = None
+            min_version = float('inf')
+            min_accver = None
+            min_coords = None
+
+            for base_accver in nc_dict.keys():
+                version = int(base_accver.split('.')[1])
+
+                if version > max_version:
+                    max_version = version
+                    max_accver = base_accver
+                    max_coords = nc_dict[base_accver]
+
+                if version < min_version:
+                    min_version = version
+                    min_accver = base_accver
+                    min_coords = nc_dict[base_accver]
+
+            if genome_version != "current":
+                title = NCBIdna.fetch_nc_info(min_accver)
+                return title, nc_loc, min_accver, min_coords
+            else:
+                title = NCBIdna.fetch_nc_info(max_accver)
+                return title, nc_loc, max_accver, max_coords
+
+    @staticmethod
+    def fetch_nc_info(nc_accver):
+        global headers
+
+        while True:
+            url = f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=nuccore&id={nc_accver}&retmode=json"
+            response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                nc_info = response.json()
+                try:
+                    uid = nc_info['result']['uids'][0]
+                    title = nc_info['result'][uid]['title']
+                    return title
+                except Exception as e:
+                    time.sleep(random.uniform(0.25, 0.5))
+            else:
+                time.sleep(random.uniform(0.25, 0.5))
+
+    @staticmethod
+    def design_primers(variant, gene_name, species, sequence, exons, nb_primers, product_size_settings, ucsc_validation=False, only_validated="No"):
         try:
-            simplified_sequence = "".join(sequence[start:end] for start, end in exons)
+            simplified_sequence = "".join(sequence[start:end + 1] for start, end in exons)
 
             primer3_input = {
                 'SEQUENCE_ID': 'primer_in_exons',
@@ -632,19 +776,43 @@ class NCBIdna:
                                         amplicon_size = right_position - left_position + 1
                                         amplicon_size_abs = right_absolute - left_absolute + 1
 
+                                        amplicon_seq = simplified_sequence[left_position:right_position + 1]
+
+                                        tm_amplicon = primer3.bindings.calc_tm(
+                                            str(amplicon_seq),
+                                            mv_conc=50.0,  # Na+ mM
+                                            dv_conc=1.5,  # Mg2+ mM
+                                            dntp_conc=0.6,  # dNTPs mM
+                                            dna_conc=50.0,  # oligo nM
+                                            salt_corrections_method="santalucia"
+                                        )
+
                                         if species in ucsc_species.keys() and ucsc_validation is True:
                                             org = ucsc_species[species]["org"]
                                             db = ucsc_species[species]["db"]
                                             wp_targets = ucsc_species[species]["wp_target"]
-                                            validation_relative, validation_absolute = NCBIdna.fetch_ucsc_pcr_results(
+                                            validation_relative, validation_absolute, sequence_relative, sequence_absolute = NCBIdna.fetch_ucsc_pcr_results(
                                                 species, org, db, wp_targets, left_seq, right_seq,
                                                 amplicon_size_abs, product_size_settings[1])
                                         else:
                                             validation_relative, validation_absolute = None, None
 
-                                        if only_validated is True:
-                                            if not validation_relative and not validation_absolute:
-                                                continue
+                                        if only_validated != "No":
+                                            if only_validated == "qPCR":
+                                                if validation_relative in [None, False]:
+                                                    print("SKIPPED qPCR", left_seq, right_seq, validation_relative, validation_absolute)
+                                                    continue
+                                            elif only_validated == "Genome":
+                                                if validation_absolute in [None, False]:
+                                                    print("SKIPPED Genome", left_seq, right_seq, validation_relative,
+                                                          validation_absolute)
+                                                    continue
+                                            elif only_validated == "Both":
+                                                if validation_relative in [None, False] or validation_absolute in [None,
+                                                                                                                   False]:
+                                                    print("SKIPPED Both", left_seq, right_seq, validation_relative,
+                                                          validation_absolute)
+                                                    continue
 
                                         primers.append({
                                             'left_primer': {
@@ -675,11 +843,16 @@ class NCBIdna:
                                                 'exon_junction': None
                                             },
                                             'validation_relative': validation_relative,
+                                            'validation_relative_sequences': sequence_relative,
                                             'validation_absolute': validation_absolute,
                                             'amplicon_size': amplicon_size,
-                                            'amplicon_size_abs': amplicon_size_abs
+                                            'amplicon_seq': amplicon_seq,
+                                            'amplicon_tm': tm_amplicon,
+                                            'amplicon_size_abs': amplicon_size_abs,
+
                                         })
 
+                                        print("SAVED", left_seq, right_seq, validation_relative, validation_absolute)
                                         pbar.update(1)
                                         seen_primers.add(primer_key)
                                         primers_found_in_iteration = True
@@ -717,6 +890,8 @@ class NCBIdna:
     def fetch_ucsc_pcr_results(species, org, db, wp_targets, wp_f, wp_r, amplicon_size_abs, max_product_size):
         validation_relative = None
         validation_absolute = None
+        sequence_relative = []
+        sequence_absolute = []
 
         for wp_target in wp_targets:
             if wp_target == "genome":
@@ -747,28 +922,41 @@ class NCBIdna:
                     validation_absolute = f"Error {response.status_code}"
                 else:
                     validation_relative = f"Error {response.status_code}"
+                continue
 
             soup = BeautifulSoup(response.text, "html.parser")
             result_section = soup.find("pre")
 
+            parsed_results = []
             if result_section:
-                results = result_section.text.strip().split("\n")
-                fragment_sizes = []
+                lines = result_section.text.strip().split("\n")
+                current_record = {}
 
-                for line in results:
-                    match = re.search(r'(\d+)bp', line)
-                    if match:
-                        size = int(match.group(1))
-                        if size <= amplicon_size:
-                            fragment_sizes.append(size)
+                for line in lines:
+                    header_match = re.match(r"^>(.+?)\s+(\d+)bp", line)
+                    if header_match:
+                        if "sequence" in current_record:
+                            parsed_results.append(current_record)
+                            current_record = {}
+                        current_record["name"] = header_match.group(1).strip()
+                        current_record["size"] = int(header_match.group(2))
+                        current_record["sequence"] = ""
+                    elif current_record:
+                        current_record["sequence"] += line.strip()
 
-                if not fragment_sizes:
+                if current_record:
+                    parsed_results.append(current_record)
+
+                sizes = [record["size"] for record in parsed_results]
+
+                if not sizes:
                     if wp_target == "genome":
                         validation_absolute = "Not found"
+                        sequence_absolute = []
                     else:
                         validation_relative = "Not found"
-
-                if all(size == fragment_sizes[0] for size in fragment_sizes):
+                        sequence_relative = []
+                elif all(size == sizes[0] for size in sizes):
                     if wp_target == "genome":
                         validation_absolute = True
                     else:
@@ -778,27 +966,40 @@ class NCBIdna:
                         validation_absolute = False
                     else:
                         validation_relative = False
+
+                if wp_target == "genome":
+                    sequence_absolute = parsed_results
+                else:
+                    sequence_relative = parsed_results
             else:
                 if wp_target == "genome":
                     validation_absolute = "Not found"
+                    sequence_absolute = []
                 else:
                     validation_relative = "Not found"
+                    sequence_relative = []
 
-        if validation_relative is None:
-            ncbi_pcr_results = NCBIdna.ncb_pcr_in_silico(species, wp_f, wp_r)
+        # Fallback NCBI PCR
+        if not sequence_relative:
+            ncbi_pcr_results = NCBIdna.ncbi_pcr_in_silico(species, wp_f, wp_r)
+            filtered = [res for res in ncbi_pcr_results if
+                        res["product_length"] and res["product_length"] < 100 + max_product_size]
 
-            filtered_lengths = [res["product_length"] for res in ncbi_pcr_results if
-                                res["product_length"] is not None and res["product_length"] < 100 + max_product_size]
-
-            if len(set(filtered_lengths)) <= 1:
+            if len(set(res["product_length"] for res in filtered)) <= 1:
                 validation_relative = True
+                if filtered:
+                    sequence_relative = [{
+                        "name": "NCBI result",
+                        "size": filtered[0]["product_length"],
+                        "sequence": filtered[0].get("amplified_seq")
+                    }]
             else:
                 validation_relative = False
 
-        return validation_relative, validation_absolute
+        return validation_relative, validation_absolute, sequence_relative, sequence_absolute
 
     @staticmethod
-    def ncb_pcr_in_silico(species, primer_fwd, primer_rev):
+    def ncbi_pcr_in_silico(species, primer_fwd, primer_rev):
         url = (
             "https://www.ncbi.nlm.nih.gov/tools/primer-blast/primertool.cgi?"
             "CMD=request&CON_ANEAL_OLIGO=50.0&CON_DNTPS=0.6&DIVA_CATIONS=1.5&EVALUE=30000"

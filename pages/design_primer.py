@@ -14,7 +14,6 @@ from pages.design_primer_API import NCBIdna
 
 from utils.page_config import page_config
 
-
 ucsc_species = [
     "None",
     "Homo sapiens",
@@ -206,22 +205,22 @@ def graphique(exons, primers, normalization=False):
                      'amplicon_size_abs': p['amplicon_size_abs'],
                      'label': f'Left {i + 1}', 'y': (i + 1) * 10}
                     for i, p in enumerate(primers)] + [
-        {'pair': f'Pair {i + 1}', 'type': 'Right Primer',
-         'sequence': p['right_primer']['sequence'],
-         'length': p['right_primer']['length'],
-         'position': f"{p['right_primer']['position'][0]}-{p['right_primer']['position'][1]}",
-         'position_start': p['right_primer']['position'][0],
-         'position_end': p['right_primer']['position'][1],
-         'position_abs': f"{p['right_primer']['position_abs'][0]}-{p['right_primer']['position_abs'][1]}",
-         'position_start_abs': p['right_primer']['position_abs'][0],
-         'position_end_abs': p['right_primer']['position_abs'][1],
-         'tm': p['right_primer']['tm'],
-         'self_complementarity': p['right_primer']['self_complementarity'],
-         "self_3prime_complementarity": p['right_primer']['self_3prime_complementarity'],
-         'amplicon_size': p['amplicon_size'],
-         'amplicon_size_abs': p['amplicon_size_abs'],
-         'label': f'Right {i + 1}', 'y': (i + 1) * 10}
-        for i, p in enumerate(primers)]
+                       {'pair': f'Pair {i + 1}', 'type': 'Right Primer',
+                        'sequence': p['right_primer']['sequence'],
+                        'length': p['right_primer']['length'],
+                        'position': f"{p['right_primer']['position'][0]}-{p['right_primer']['position'][1]}",
+                        'position_start': p['right_primer']['position'][0],
+                        'position_end': p['right_primer']['position'][1],
+                        'position_abs': f"{p['right_primer']['position_abs'][0]}-{p['right_primer']['position_abs'][1]}",
+                        'position_start_abs': p['right_primer']['position_abs'][0],
+                        'position_end_abs': p['right_primer']['position_abs'][1],
+                        'tm': p['right_primer']['tm'],
+                        'self_complementarity': p['right_primer']['self_complementarity'],
+                        "self_3prime_complementarity": p['right_primer']['self_3prime_complementarity'],
+                        'amplicon_size': p['amplicon_size'],
+                        'amplicon_size_abs': p['amplicon_size_abs'],
+                        'label': f'Right {i + 1}', 'y': (i + 1) * 10}
+                       for i, p in enumerate(primers)]
 
     primers_data = pd.DataFrame(primers_data)
 
@@ -249,7 +248,8 @@ def graphique(exons, primers, normalization=False):
         y=alt.Y('y:Q', title=None),
         color=alt.Color('pair:N', scale=alt.Scale(domain=[f'Pair {i + 1}' for i in range(len(primers))]),
                         title='Primers pairs'),
-        tooltip=['pair', 'label', 'sequence', 'tm', 'length', 'position', 'self_complementarity', "self_3prime_complementarity", 'amplicon_size', 'position_abs', 'amplicon_size_abs'],
+        tooltip=['pair', 'label', 'sequence', 'tm', 'length', 'position', 'self_complementarity',
+                 "self_3prime_complementarity", 'amplicon_size', 'position_abs', 'amplicon_size_abs'],
     )
 
     annotations_left = alt.Chart(primers_data).mark_text(
@@ -288,7 +288,6 @@ colextract1, colextract2, colextract3 = st.columns([0.5, 1.5, 1.5], gap="small")
 
 # Extraction of DNA sequence
 with colextract1:
-
     all_variants = {}
     upstream_entry = []
 
@@ -328,7 +327,8 @@ with colextract2:
                         for i, gene_id in enumerate(gene_ids):
                             pbar.progress(i / len(gene_ids),
                                           text=f'**:blue[Extract info... {gene_id}] ⚠️:red[PLEASE WAIT UNTIL END WITHOUT CHANGING ANYTHING]**')
-                            all_variants_output, message = NCBIdna(gene_id, species, all_slice_forms=True if all_slice_form else False).find_sequences()
+                            all_variants_output, message = NCBIdna(gene_id, species,
+                                                                   all_slice_forms=True if all_slice_form else False).find_sequences()
                             if "Error 200" not in all_variants_output:
                                 pbar.progress((i + 1) / len(gene_ids),
 
@@ -481,7 +481,7 @@ with colextract2:
 with colextract3:
     default_fasta = """>ExampleGene1 | Homo sapiens\ntacgcaatgtcatgactgcgtttatagatagataaaaagcgtgcgattactaaacgcggatggcgtgcgcactatttcatcggttctgaaatctccatccaatcaaccttactcagacagctcccccgtgacacgggctaccacattcaggtggcttgtaatacatgggtataacatcaatagttcgtgccgcaatacttcgcgggggtacgggtaagtgacgaaagaagtaactctcccactcggagaatctacggtagttgcgcgtttttaattttcatctttgtcctgccagcaatgtacacaccgcaaagtctgtccaagtgcatgctagaccgggtgtgcaccctagggtagagcacggagttgatttcgggcgtgagatcaaggccaaggaggaagtaagcatcgtatctctgtctaatcattgcaggaagggtgcacagcttaggttccccaacaatgcttttagcatgatagctgtctctttgtggactgta\n>ExampleGene2\nttcctctttcaccagctttccatccccgcgacatggcggatcaaaactctggcaaagattaccagtcgaaggcatctcgagatggagatggtaagtttttgtcatacgacccaaacccggaggagacacgttagaaaatccacgacttcttcgaagactaagtggatgagtacaggtcgggaagagtcgactaccctaggatcccgcgtgcggtctacatgtcatgatcctccatgggcccaggccccgtagtgcgactgcggttaattgcatctacgaattttacacttgcgtttaagaccggacgccgggtttctaagtaaaagtttggctatcgacattatttttttaggggcaccgtatcggattccaatgggtggctggattctcagtgaatctccgtagttcgggaaatcactcaggaatgctaatcatccagaatggaaacgtggtaaaagactgccctgcttccctcttttacctcaagaaacaggggcggg"""
 
-    st.markdown('**🔹 :blue[Alternative 1.1]** Enter a DNA sequence in FASTA format (required):',)
+    st.markdown('**🔹 :blue[Alternative 1.1]** Enter a DNA sequence in FASTA format (required):', )
     with st.expander("📌 How to write a FASTA file:"):
         st.markdown("Each entry should follow this structure:")
 
@@ -510,8 +510,8 @@ with colextract3:
             st.error("Please provide a valid FASTA sequence.")
 
 st.markdown("🔹 :blue[**Sequences added**]")
-st.markdown("You can change the species if necessary for the validation of primers via UCSC PCR in-Silico. Use 'None' if species isn't known")
-
+st.markdown(
+    "You can change the species if necessary for the validation of primers via UCSC PCR in-Silico. Use 'None' if species isn't known")
 
 if 'all_variants' not in st.session_state:
     st.session_state['all_variants'] = {}
@@ -556,7 +556,6 @@ if "min_amplicon_size" not in st.session_state:
 if "max_amplicon_size" not in st.session_state:
     st.session_state["max_amplicon_size"] = 250
 
-
 nb_primers = st.number_input('Number of primers', value=10, min_value=1, step=1)
 st.session_state["min_amplicon_size"] = st.number_input('Minimum amplicon size', value=60, min_value=10,
                                                         max_value=st.session_state["max_amplicon_size"] - 10, step=1)
@@ -571,8 +570,8 @@ if 'only_validated' not in st.session_state:
 
 st.session_state["ucsc_validation"] = st.toggle("UCSC validation", False)
 if st.session_state["ucsc_validation"] is True:
-    st.session_state["only_validated"] = st.toggle("Display only validated", False)
-
+    st.session_state["only_validated"] = st.radio("Display only validated", ["No", "qPCR", "Genome", "Both"],
+                                                  horizontal=True)
 
 if st.button('Run design primers'):
     try:
@@ -585,7 +584,12 @@ if st.button('Run design primers'):
             for i, (variant, data) in progress_bar:
                 progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
 
-                primers = NCBIdna.design_primers(variant, data['gene_name'], data['species'], data['sequence'], data['normalized_exon_coords'], nb_primers, [st.session_state["min_amplicon_size"], st.session_state["max_amplicon_size"]], st.session_state["ucsc_validation"], st.session_state["only_validated"])
+                primers = NCBIdna.design_primers(variant, data['gene_name'], data['species'], data['sequence'],
+                                                 data['normalized_exon_coords'], nb_primers,
+                                                 [st.session_state["min_amplicon_size"],
+                                                  st.session_state["max_amplicon_size"]],
+                                                 st.session_state["ucsc_validation"],
+                                                 st.session_state["only_validated"])
 
                 if len(primers) > 0:
                     for idx, primer_set in enumerate(primers):
@@ -593,6 +597,8 @@ if st.button('Run design primers'):
                             'Gene': str(variant) + data['gene_name'],
                             'Pair': idx + 1,
                             'Product Size (bp)': primer_set['amplicon_size'],
+                            'Product Tm (°C)': primer_set['amplicon_tm'],
+                            "Product Seq. (5'->3')": primer_set['amplicon_seq'],
                             'Validated': primer_set['validation_relative'],
                             "For. Pr.(5'->3')": primer_set['left_primer']['sequence'],
                             'For. Len. (bp)': primer_set['left_primer']['length'],
@@ -612,9 +618,11 @@ if st.button('Run design primers'):
                             "Rev. Self 3' Compl.": primer_set['right_primer']['self_3prime_complementarity'],
                             'Product Size Abs. (bp)': primer_set['amplicon_size_abs'],
                             'Validated Abs.': primer_set['validation_absolute'],
+                            'validation_relative_sequences': primer_set['validation_relative_sequences'],
                         })
 
-                    with st.expander(f'Primers graph location for {variant} {data["gene_name"]}', expanded=False):
+                    with st.expander(f'Primers info and graph location for {variant} {data["gene_name"]}',
+                                     expanded=False):
                         if len(data['normalized_exon_coords']) > 1:
                             st.altair_chart(graphique(data['normalized_exon_coords'], primers), theme=None,
                                             use_container_width=True,
@@ -622,12 +630,54 @@ if st.button('Run design primers'):
                         st.altair_chart(graphique(data['normalized_exon_coords'], primers, True), theme=None,
                                         use_container_width=True, key=f"{variant}_exon")
 
+                        for idx, primer_set in enumerate(primers):
+                            st.markdown("---")
+                            st.subheader(f"Primer set {idx + 1}")
+                            col1, col2 = st.columns(2)
+                            with col1:
+                                st.subheader("Forward primer")
+                                st.markdown(f"**Sequence:** `{primer_set['left_primer']['sequence']}`")
+                                st.markdown(f"**Length:** {primer_set['left_primer']['length']} bp")
+                                st.markdown(f"**Tm:** {primer_set['left_primer']['tm']} °C")
+                                st.markdown(f"**GC%:** {primer_set['left_primer']['gc_percent']}")
+                                st.markdown(f"**Self-compl.:** {primer_set['left_primer']['self_complementarity']}")
+                                st.markdown(
+                                    f"**3'-compl.:** {primer_set['left_primer']['self_3prime_complementarity']}")
+                            with col2:
+                                st.subheader("Reverse primer")
+                                st.markdown(f"**Sequence:** `{primer_set['right_primer']['sequence']}`")
+                                st.markdown(f"**Length:** {primer_set['right_primer']['length']} bp")
+                                st.markdown(f"**Tm:** {primer_set['right_primer']['tm']} °C")
+                                st.markdown(f"**GC%:** {primer_set['right_primer']['gc_percent']}")
+                                st.markdown(f"**Self-compl.:** {primer_set['right_primer']['self_complementarity']}")
+                                st.markdown(
+                                    f"**3'-compl.:** {primer_set['right_primer']['self_3prime_complementarity']}")
+                            st.markdown("")
+                            st.markdown(f"**Product Size (bp):** {primer_set['amplicon_size']} bp")
+                            st.markdown(f"**Product Tm (°C):** {primer_set['amplicon_tm']}°C")
+                            st.markdown(f"**Product sequence:** `{primer_set['amplicon_seq']}`")
+                            if st.session_state["ucsc_validation"] is True:
+                                validation_status = primer_set['validation_relative']
+                                color = "green" if validation_status is True else "red"
+                                validation_text = "Yes" if validation_status is True else (
+                                    "No" if validation_status is False else str(validation_status)
+                                )
+
+                                st.markdown(f"**Validated:** <span style='color:{color}'>{validation_text}</span>",
+                                            unsafe_allow_html=True)
+
+                                st.write(primer_set['validation_relative_sequences'])
+
                     st.toast(f"Primers designed for {variant} {data['gene_name']}!")
                 else:
                     st.warning(f"No primers were designed for {variant} {data['gene_name']}")
 
             if primers_result:
                 all_columns = list(primers_result[0].keys())
+                if not st.session_state.get("ucsc_validation", False):
+                    all_columns = [col for col in all_columns if col != "Validated"]
+                    all_columns = [col for col in all_columns if col != "Validated Abs."]
+
                 abs_columns = [col for col in all_columns if "Abs." in col]
                 other_columns = [col for col in all_columns if col not in abs_columns]
                 ordered_columns = other_columns + abs_columns
@@ -642,11 +692,9 @@ if st.button('Run design primers'):
                 download_button1, download_button2 = st.columns(2, gap='small')
                 current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
                 download_button1.download_button("💾 Download table (.xlsx)", excel_file,
-                                   file_name=f'LabmasterDP_{current_date_time}.xlsx',
-                                   mime="application/vnd.ms-excel", key='download-excel')
+                                                 file_name=f'LabmasterDP_{current_date_time}.xlsx',
+                                                 mime="application/vnd.ms-excel", key='download-excel')
                 download_button2.download_button(label="💾 Download table (.csv)", data=csv_file,
-                                   file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
+                                                 file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
     except Exception as e:
         print(e)
-
-
