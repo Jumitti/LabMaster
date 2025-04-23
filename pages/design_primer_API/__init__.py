@@ -48,7 +48,6 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
 }
 
-
 ucsc_species = {
     "Homo sapiens": {'org': 'Human', 'db': 'hg38', 'wp_target': ['genome', 'hg38KgSeqV47']},
     "Mus musculus": {'org': 'Mouse', 'db': 'mm39', 'wp_target': ['genome', 'mm39KgSeqVM36']},
@@ -218,7 +217,8 @@ class NCBIdna:
 
         all_variants, message = NCBIdna.all_variant(entrez_id, self.genome_version, self.all_slice_forms,
                                                     self.gene_id if
-                                                    self.gene_id.upper().startswith(('XM_', 'NM_', 'XR_', 'NR_', 'YP_')) else None)
+                                                    self.gene_id.upper().startswith(
+                                                        ('XM_', 'NM_', 'XR_', 'NR_', 'YP_')) else None)
         if "Error 200" not in all_variants:
             for nm_id, data in all_variants.items():
                 exon_coords = data.get('exon_coords')
@@ -596,6 +596,7 @@ class NCBIdna:
             else:
                 title = NCBIdna.fetch_nc_info(max_accver)
                 return title, nc_loc, max_accver, max_coords
+        return None
 
     @staticmethod
     def fetch_nc_info(nc_accver):
@@ -664,10 +665,11 @@ class Primer3:
                        PRIMER_MONOVALENT_CATION_CONC=50.0,
                        PRIMER_DIVALENT_CATION_CONC=1.5,
                        PRIMER_DNTP_CONC=0.6,
+                       PRIMER_ANN_Oligo_CONC=50.0,
                        PRIMER_SALT_CORRECTION=1,
                        PRIMER_THERMODYNAMIC_PARAMETERS='SantaLucia1998',
-                       PRIMER_ANN_Oligo_CONC=50.0,
-                       ucsc_validation=False, only_validated="No"):
+                       ucsc_validation=False,
+                       only_validated="No"):
 
         if not PRIMER_MIN_SIZE <= PRIMER_OPT_SIZE <= PRIMER_MAX_SIZE:
             PRIMER_OPT_SIZE = (PRIMER_MAX_SIZE + PRIMER_MIN_SIZE) // 2
@@ -691,7 +693,7 @@ class Primer3:
             simplified_sequence = "".join(sequence[start:end + 1] for start, end in exons)
 
             primer3_input = {
-                'SEQUENCE_ID': 'primer_in_exons',
+                'SEQUENCE_ID': 'labmaster_design_primers',
                 'SEQUENCE_TEMPLATE': simplified_sequence,
             }
 
@@ -714,17 +716,23 @@ class Primer3:
                 'PRIMER_MAX_END_STABILITY': PRIMER_MAX_END_STABILITY,  # Maximum end stability 3'
 
                 # Secondary alignment (Thermodynamic model)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH': PRIMER_MAX_TEMPLATE_MISPRIMING_TH,  # Bad template match (primer pairs)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL': PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL,  # Bad match for single primer
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH': PRIMER_MAX_TEMPLATE_MISPRIMING_TH,
+                # Bad template match (primer pairs)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL': PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL,
+                # Bad match for single primer
                 'PRIMER_MAX_SELF_ANY_TH': PRIMER_MAX_SELF_ANY_TH,  # Internal matching (all sites, thermodynamics)
                 'PRIMER_MAX_SELF_END_TH': PRIMER_MAX_SELF_END_TH,  # Internal pairing (3' end, thermodynamic)
-                'PRIMER_PAIR_MAX_COMPL_ANY_TH': PRIMER_PAIR_MAX_COMPL_ANY_TH,  # Primer pairing (all sites, thermodynamics)
-                'PRIMER_PAIR_MAX_COMPL_END_TH': PRIMER_PAIR_MAX_COMPL_END_TH,  # Pairing between primers (3' end, thermodynamics)
+                'PRIMER_PAIR_MAX_COMPL_ANY_TH': PRIMER_PAIR_MAX_COMPL_ANY_TH,
+                # Primer pairing (all sites, thermodynamics)
+                'PRIMER_PAIR_MAX_COMPL_END_TH': PRIMER_PAIR_MAX_COMPL_END_TH,
+                # Pairing between primers (3' end, thermodynamics)
                 'PRIMER_MAX_HAIRPIN_TH': PRIMER_MAX_HAIRPIN_TH,  # Maximum free energy for hairpins
 
                 # Secondary alignment (Old model)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING': PRIMER_MAX_TEMPLATE_MISPRIMING,  # Bad template matching (primer pairs, classic)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL': PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL,  # Bad match for single primer (classic)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING': PRIMER_MAX_TEMPLATE_MISPRIMING,
+                # Bad template matching (primer pairs, classic)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL': PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL,
+                # Bad match for single primer (classic)
                 'PRIMER_MAX_SELF_ANY': PRIMER_MAX_SELF_ANY,  # Internal pairing (all sites, classic)
                 'PRIMER_MAX_SELF_END': PRIMER_MAX_SELF_END,  # Internal pairing (3' end, classic)
                 'PRIMER_PAIR_MAX_COMPL_ANY': PRIMER_PAIR_MAX_COMPL_ANY,  # Primer pairing (all sites, classic)
@@ -732,7 +740,8 @@ class Primer3:
 
                 # Search for secondary alignments
                 'PRIMER_THERMODYNAMIC_ALIGNMENT': PRIMER_THERMODYNAMIC_ALIGNMENT,  # Use thermodynamic model
-                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT if len(sequence) < 10000 else 0,  # Also align with thermodynamic model (maybe slow)
+                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT if len(
+                    sequence) < 10000 else 0,  # Also align with thermodynamic model (maybe slow)
 
                 # General settings for pairs
                 'PRIMER_NUM_RETURN': PRIMER_NUM_RETURN,  # Maximum number of pairs returned
@@ -759,20 +768,20 @@ class Primer3:
                 # Concentration of monovalent cations (e.g.: Na+)
                 'PRIMER_MONOVALENT_CATION_CONC': PRIMER_MONOVALENT_CATION_CONC,  # In mM (default is 50 mM)
 
-                # Concentration of divalent cations (e.g. Mg2+)
+                # Concentration of divalent cations (e.g.: Mg2+)
                 'PRIMER_DIVALENT_CATION_CONC': PRIMER_DIVALENT_CATION_CONC,  # In mM (default is 1.5 mM)
 
                 # Concentration of dNTPs
                 'PRIMER_DNTP_CONC': PRIMER_DNTP_CONC,  # In mM (default is 0.8 mM)
+
+                # Concentration of the oligonucleotide for the init
+                'PRIMER_ANN_Oligo_CONC': PRIMER_ANN_Oligo_CONC,
 
                 # Salt correction formula (using Santa Lucia 1998 formula)
                 'PRIMER_SALT_CORRECTION': PRIMER_SALT_CORRECTION,  # 1 to use the Santa Lucia 1998 correction
 
                 # Thermodynamic parameters (table of parameters to calculate Tm)
                 'PRIMER_THERMODYNAMIC_PARAMETERS': PRIMER_THERMODYNAMIC_PARAMETERS,  # Use Santa Lucia 1998 table
-
-                # Concentration of the oligonucleotide for the init
-                'PRIMER_ANN_Oligo_CONC': PRIMER_ANN_Oligo_CONC,
             }
 
             primers = []
@@ -788,7 +797,8 @@ class Primer3:
 
             seen_primers = set()
 
-            with tqdm(total=PRIMER_NUM_RETURN, desc=f"Generating primers for {variant} {gene_name}", unit="primer") as pbar:
+            with tqdm(total=PRIMER_NUM_RETURN, desc=f"Generating primers for {variant} {gene_name}",
+                      unit="primer") as pbar:
                 no_progress_count = 0
                 max_no_progress = 2
 
@@ -818,8 +828,7 @@ class Primer3:
 
                             primer_results = primer3.bindings.design_primers(primer3_input, primer3_params)
 
-                            if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results[
-                                'PRIMER_PAIR_NUM_RETURNED'] > 0:
+                            if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results['PRIMER_PAIR_NUM_RETURNED'] > 0:
                                 for k in range(primer_results['PRIMER_PAIR_NUM_RETURNED']):
                                     if len(primers) >= PRIMER_NUM_RETURN:
                                         break
@@ -850,7 +859,7 @@ class Primer3:
 
                                         tm_amplicon = primer3.bindings.calc_tm(
                                             str(amplicon_seq),
-                                            mv_conc=PRIMER_MONOVALENT_CATION_CONC,
+                                            mv_conc=PRIMER_MONOVALENT_CATION_CONC,  # Na+ mM
                                             dv_conc=PRIMER_DIVALENT_CATION_CONC,  # Mg2+ mM
                                             dntp_conc=PRIMER_DNTP_CONC,  # dNTPs mM
                                             dna_conc=PRIMER_ANN_Oligo_CONC,  # oligo nM
@@ -871,7 +880,8 @@ class Primer3:
                                         if only_validated != "No":
                                             if only_validated == "qPCR":
                                                 if validation_relative in [None, False]:
-                                                    print("SKIPPED qPCR", left_seq, right_seq, validation_relative, validation_absolute)
+                                                    print("SKIPPED qPCR", left_seq, right_seq, validation_relative,
+                                                          validation_absolute)
                                                     continue
                                             elif only_validated == "Genome":
                                                 if validation_absolute in [None, False]:
@@ -893,8 +903,9 @@ class Primer3:
                                                 'position_abs': (left_absolute, left_absolute + len(left_seq)),
                                                 'tm': primer_results.get(f'PRIMER_LEFT_{k}_TM', 'N/A'),
                                                 'gc_percent': primer_results.get(f'PRIMER_LEFT_{k}_GC_PERCENT', 'N/A'),
-                                                'self_complementarity': primer_results.get(f'PRIMER_LEFT_{k}_SELF_ANY_TH',
-                                                                                           'N/A'),
+                                                'self_complementarity': primer_results.get(
+                                                    f'PRIMER_LEFT_{k}_SELF_ANY_TH',
+                                                    'N/A'),
                                                 'self_3prime_complementarity': primer_results.get(
                                                     f'PRIMER_LEFT_{k}_SELF_END_TH', 'N/A'),
                                                 'exon_junction': None
@@ -903,11 +914,13 @@ class Primer3:
                                                 'sequence': right_seq,
                                                 'length': len(right_seq),
                                                 'position': (right_position - len(right_seq), right_position),
-                                                'position_abs': (right_absolute - len(right_seq), right_absolute + len(right_seq)),
+                                                'position_abs': (right_absolute - len(right_seq),
+                                                                 right_absolute + len(right_seq)),
                                                 'tm': primer_results.get(f'PRIMER_RIGHT_{k}_TM', 'N/A'),
                                                 'gc_percent': primer_results.get(f'PRIMER_RIGHT_{k}_GC_PERCENT', 'N/A'),
-                                                'self_complementarity': primer_results.get(f'PRIMER_RIGHT_{k}_SELF_ANY_TH',
-                                                                                           'N/A'),
+                                                'self_complementarity': primer_results.get(
+                                                    f'PRIMER_RIGHT_{k}_SELF_ANY_TH',
+                                                    'N/A'),
                                                 'self_3prime_complementarity': primer_results.get(
                                                     f'PRIMER_RIGHT_{k}_SELF_END_TH', 'N/A'),
                                                 'template_strand': 'Minus',
@@ -941,6 +954,7 @@ class Primer3:
 
         except Exception as e:
             print(e)
+            return None
 
     @staticmethod
     def cumsum(iterable):

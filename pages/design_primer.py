@@ -128,6 +128,25 @@ ucsc_species = [
 ]
 
 
+def reset_defaults():
+    st.session_state["min_amplicon_size"] = 60
+    st.session_state["max_amplicon_size"] = 250
+
+    st.session_state['PRIMER_OPT_SIZE'] = 20
+    st.session_state['PRIMER_MIN_SIZE'] = 16
+    st.session_state['PRIMER_MAX_SIZE'] = 24
+
+    st.session_state['PRIMER_OPT_TM'] = 60.0
+    st.session_state['PRIMER_MIN_TM'] = 57.0
+    st.session_state['PRIMER_MAX_TM'] = 63.0
+
+    st.session_state['PRIMER_MIN_GC'] = 40.0
+    st.session_state['PRIMER_MAX_GC'] = 60.0
+
+    st.session_state["ucsc_validation"] = False
+    st.session_state["only_validated"] = False
+
+
 def parse_fasta_to_json(fasta_text):
     lines = fasta_text.strip().split("\n")
     variants = {}
@@ -551,11 +570,24 @@ if st.session_state['all_variants']:
 else:
     st.warning('You have not extracted any information')
 
+col_settings1, col_settings2, col_settings3 = st.columns(3, gap="small")
 
 if "min_amplicon_size" not in st.session_state:
     st.session_state["min_amplicon_size"] = 60
 if "max_amplicon_size" not in st.session_state:
     st.session_state["max_amplicon_size"] = 250
+
+PRIMER_NUM_RETURN = col_settings1.number_input('Number of primers', value=10, min_value=1, step=1)
+st.session_state["min_amplicon_size"] = col_settings2.number_input('Minimum amplicon size (bp)',
+                                                                   value=st.session_state["min_amplicon_size"],
+                                                                   min_value=10,
+                                                                   max_value=st.session_state["max_amplicon_size"] - 10,
+                                                                   step=1)
+
+st.session_state["max_amplicon_size"] = col_settings3.number_input('Maximum amplicon size (bp)',
+                                                                   value=st.session_state["max_amplicon_size"],
+                                                                   min_value=st.session_state["min_amplicon_size"] + 10,
+                                                                   step=1)
 
 if 'PRIMER_OPT_SIZE' not in st.session_state:
     st.session_state['PRIMER_OPT_SIZE'] = 20
@@ -564,33 +596,79 @@ if 'PRIMER_MIN_SIZE' not in st.session_state:
 if 'PRIMER_MAX_SIZE' not in st.session_state:
     st.session_state['PRIMER_MAX_SIZE'] = 24
 
-PRIMER_NUM_RETURN = st.number_input('Number of primers', value=10, min_value=1, step=1)
-st.session_state["min_amplicon_size"] = st.number_input('Minimum amplicon size', value=st.session_state["min_amplicon_size"], min_value=10,
-                                                        max_value=st.session_state["max_amplicon_size"] - 10, step=1)
+st.session_state["PRIMER_MIN_SIZE"] = col_settings1.number_input('Minimum primer size (bp)',
+                                                                 value=st.session_state["PRIMER_MIN_SIZE"],
+                                                                 min_value=5,
+                                                                 max_value=st.session_state["PRIMER_OPT_SIZE"],
+                                                                 step=1, )
 
-st.session_state["max_amplicon_size"] = st.number_input('Maximum amplicon size', value=st.session_state["max_amplicon_size"],
-                                                        min_value=st.session_state["min_amplicon_size"] + 10, step=1)
+st.session_state["PRIMER_OPT_SIZE"] = col_settings2.number_input('Optimal primer size (bp)',
+                                                                 value=st.session_state["PRIMER_OPT_SIZE"],
+                                                                 min_value=st.session_state["PRIMER_MIN_SIZE"],
+                                                                 max_value=st.session_state["PRIMER_MAX_SIZE"],
+                                                                 step=1, )
 
-st.session_state["PRIMER_MIN_SIZE"] = st.number_input('Minimum primer size', value=st.session_state["PRIMER_MIN_SIZE"], min_value=5,
-                                                        max_value=st.session_state["PRIMER_OPT_SIZE"], step=1,)
+st.session_state["PRIMER_MAX_SIZE"] = col_settings3.number_input('Maximum primer size (bp)',
+                                                                 value=st.session_state["PRIMER_MAX_SIZE"],
+                                                                 min_value=st.session_state["PRIMER_OPT_SIZE"],
+                                                                 step=1, )
 
-st.session_state["PRIMER_OPT_SIZE"] = st.number_input('Optimal primer size', value=st.session_state["PRIMER_OPT_SIZE"], min_value=st.session_state["PRIMER_MIN_SIZE"],
-                                                        max_value=st.session_state["PRIMER_MAX_SIZE"], step=1,)
+if 'PRIMER_OPT_TM' not in st.session_state:
+    st.session_state['PRIMER_OPT_TM'] = 60.0
+if 'PRIMER_MIN_TM' not in st.session_state:
+    st.session_state['PRIMER_MIN_TM'] = 57.0
+if 'PRIMER_MAX_TM' not in st.session_state:
+    st.session_state['PRIMER_MAX_TM'] = 63.0
 
-st.session_state["PRIMER_MAX_SIZE"] = st.number_input('Maximum primer size', value=st.session_state["PRIMER_MAX_SIZE"],
-                                                        min_value=st.session_state["PRIMER_OPT_SIZE"], step=1,)
+st.session_state['PRIMER_MIN_TM'] = col_settings1.number_input("Minimum primer Tm (°C)",
+                                                               value=st.session_state["PRIMER_MIN_TM"],
+                                                               min_value=5.0,
+                                                               max_value=st.session_state["PRIMER_OPT_TM"], step=0.1)
+
+st.session_state['PRIMER_OPT_TM'] = col_settings2.number_input('Optimal primer Tm (°C)',
+                                                               value=st.session_state["PRIMER_OPT_TM"],
+                                                               min_value=st.session_state["PRIMER_MIN_TM"],
+                                                               max_value=st.session_state["PRIMER_MAX_TM"], step=0.1)
+
+st.session_state['PRIMER_MAX_TM'] = col_settings3.number_input('Maximum primer Tm (°C)',
+                                                               value=st.session_state["PRIMER_MAX_TM"],
+                                                               min_value=st.session_state["PRIMER_OPT_TM"], step=0.1)
+
+if 'PRIMER_MIN_GC' not in st.session_state:
+    st.session_state['PRIMER_MIN_GC'] = 40.0
+if 'PRIMER_MAX_GC' not in st.session_state:
+    st.session_state['PRIMER_MAX_GC'] = 60.0
+
+st.session_state['PRIMER_MIN_GC'] = col_settings1.number_input('Minimum primer GC (%)',
+                                                               value=st.session_state["PRIMER_MIN_GC"],
+                                                               min_value=0.0,
+                                                               max_value=st.session_state["PRIMER_MAX_GC"],
+                                                               step=0.1)
+st.session_state['PRIMER_MAX_GC'] = col_settings2.number_input('Maximum primer GC (%)',
+                                                               value=st.session_state["PRIMER_MAX_GC"],
+                                                               min_value=st.session_state["PRIMER_MIN_GC"],
+                                                               max_value=100.0,
+                                                               step=0.1)
 
 if 'ucsc_validation' not in st.session_state:
     st.session_state["ucsc_validation"] = False
 if 'only_validated' not in st.session_state:
     st.session_state["only_validated"] = False
 
-st.session_state["ucsc_validation"] = st.toggle("UCSC validation", False)
+col_settings3.markdown("")
+st.session_state["ucsc_validation"] = col_settings3.toggle("UCSC/NCBI primers PCR in-silico validation", False)
 if st.session_state["ucsc_validation"] is True:
-    st.session_state["only_validated"] = st.radio("Display only validated", ["No", "qPCR", "Genome", "Both"],
+    st.session_state["only_validated"] = col_settings3.radio("Display only validated", ["No", "qPCR", "Genome", "Both"],
                                                   horizontal=True)
 
-if st.button('Run design primers'):
+st.divider()
+col1_button, col2_button = st.columns(2, gap="small")
+# Reset button
+if col1_button.button("🔄 Reset defaults"):
+    reset_defaults()
+    st.rerun()
+
+if col2_button.button('🏃🏽‍♂️‍➡️ Run design primers'):
     try:
         primers_result = []
 
@@ -606,8 +684,17 @@ if st.button('Run design primers'):
                                                  species=data['species'],
                                                  sequence=data['sequence'],
                                                  exons=data['normalized_exon_coords'],
+                                                 PRIMER_OPT_SIZE=st.session_state["PRIMER_OPT_SIZE"],
+                                                 PRIMER_MIN_SIZE=st.session_state["PRIMER_MIN_SIZE"],
+                                                 PRIMER_MAX_SIZE=st.session_state["PRIMER_MAX_SIZE"],
+                                                 PRIMER_OPT_TM=st.session_state["PRIMER_OPT_TM"],
+                                                 PRIMER_MIN_TM=st.session_state["PRIMER_MIN_TM"],
+                                                 PRIMER_MAX_TM=st.session_state["PRIMER_MAX_TM"],
+                                                 PRIMER_MIN_GC=st.session_state["PRIMER_MIN_GC"],
+                                                 PRIMER_MAX_GC=st.session_state["PRIMER_MAX_GC"],
                                                  PRIMER_NUM_RETURN=PRIMER_NUM_RETURN,
-                                                 PRIMER_PRODUCT_SIZE_RANGE=[st.session_state["min_amplicon_size"], st.session_state["max_amplicon_size"]],
+                                                 PRIMER_PRODUCT_SIZE_RANGE=[st.session_state["min_amplicon_size"],
+                                                                            st.session_state["max_amplicon_size"]],
                                                  ucsc_validation=st.session_state["ucsc_validation"],
                                                  only_validated=st.session_state["only_validated"])
 
