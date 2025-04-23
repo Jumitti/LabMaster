@@ -10,7 +10,7 @@ import pandas as pd
 import requests
 import streamlit as st
 from stqdm import stqdm
-from pages.design_primer_API import NCBIdna
+from pages.design_primer_API import NCBIdna, Primer3
 
 from utils.page_config import page_config
 
@@ -541,27 +541,44 @@ if st.session_state['all_variants']:
 
     updated_json = df.set_index("N°/Name").to_dict(orient="index")
     st.json(updated_json, expanded=False)
-    current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    st.download_button(
-        label="💾 Download (.json)",
-        data=json.dumps(updated_json, indent=4),
-        file_name=f"Sequences_{current_date_time}.json",
-        mime="application/json"
-    )
+    # current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    # st.download_button(
+    #     label="💾 Download (.json)",
+    #     data=json.dumps(updated_json, indent=4),
+    #     file_name=f"Sequences_{current_date_time}.json",
+    #     mime="application/json"
+    # )
 else:
     st.warning('You have not extracted any information')
 
+
 if "min_amplicon_size" not in st.session_state:
-    st.session_state["min_amplicon_size"] = 80
+    st.session_state["min_amplicon_size"] = 60
 if "max_amplicon_size" not in st.session_state:
     st.session_state["max_amplicon_size"] = 250
 
-nb_primers = st.number_input('Number of primers', value=10, min_value=1, step=1)
-st.session_state["min_amplicon_size"] = st.number_input('Minimum amplicon size', value=60, min_value=10,
+if 'PRIMER_OPT_SIZE' not in st.session_state:
+    st.session_state['PRIMER_OPT_SIZE'] = 20
+if 'PRIMER_MIN_SIZE' not in st.session_state:
+    st.session_state['PRIMER_MIN_SIZE'] = 16
+if 'PRIMER_MAX_SIZE' not in st.session_state:
+    st.session_state['PRIMER_MAX_SIZE'] = 24
+
+PRIMER_NUM_RETURN = st.number_input('Number of primers', value=10, min_value=1, step=1)
+st.session_state["min_amplicon_size"] = st.number_input('Minimum amplicon size', value=st.session_state["min_amplicon_size"], min_value=10,
                                                         max_value=st.session_state["max_amplicon_size"] - 10, step=1)
 
-st.session_state["max_amplicon_size"] = st.number_input('Maximum amplicon size', value=250,
+st.session_state["max_amplicon_size"] = st.number_input('Maximum amplicon size', value=st.session_state["max_amplicon_size"],
                                                         min_value=st.session_state["min_amplicon_size"] + 10, step=1)
+
+st.session_state["PRIMER_MIN_SIZE"] = st.number_input('Minimum primer size', value=st.session_state["PRIMER_MIN_SIZE"], min_value=5,
+                                                        max_value=st.session_state["PRIMER_OPT_SIZE"], step=1,)
+
+st.session_state["PRIMER_OPT_SIZE"] = st.number_input('Optimal primer size', value=st.session_state["PRIMER_OPT_SIZE"], min_value=st.session_state["PRIMER_MIN_SIZE"],
+                                                        max_value=st.session_state["PRIMER_MAX_SIZE"], step=1,)
+
+st.session_state["PRIMER_MAX_SIZE"] = st.number_input('Maximum primer size', value=st.session_state["PRIMER_MAX_SIZE"],
+                                                        min_value=st.session_state["PRIMER_OPT_SIZE"], step=1,)
 
 if 'ucsc_validation' not in st.session_state:
     st.session_state["ucsc_validation"] = False
@@ -584,12 +601,15 @@ if st.button('Run design primers'):
             for i, (variant, data) in progress_bar:
                 progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
 
-                primers = NCBIdna.design_primers(variant, data['gene_name'], data['species'], data['sequence'],
-                                                 data['normalized_exon_coords'], nb_primers,
-                                                 [st.session_state["min_amplicon_size"],
-                                                  st.session_state["max_amplicon_size"]],
-                                                 st.session_state["ucsc_validation"],
-                                                 st.session_state["only_validated"])
+                primers = Primer3.design_primers(variant=variant,
+                                                 gene_name=data['gene_name'],
+                                                 species=data['species'],
+                                                 sequence=data['sequence'],
+                                                 exons=data['normalized_exon_coords'],
+                                                 PRIMER_NUM_RETURN=PRIMER_NUM_RETURN,
+                                                 PRIMER_PRODUCT_SIZE_RANGE=[st.session_state["min_amplicon_size"], st.session_state["max_amplicon_size"]],
+                                                 ucsc_validation=st.session_state["ucsc_validation"],
+                                                 only_validated=st.session_state["only_validated"])
 
                 if len(primers) > 0:
                     for idx, primer_set in enumerate(primers):
@@ -632,7 +652,7 @@ if st.button('Run design primers'):
 
                         for idx, primer_set in enumerate(primers):
                             st.markdown("---")
-                            st.subheader(f"Primer set {idx + 1}")
+                            st.subheader(f"Primer set {idx + 1} for {variant} {data['gene_name']}")
                             col1, col2 = st.columns(2)
                             with col1:
                                 st.subheader("Forward primer")

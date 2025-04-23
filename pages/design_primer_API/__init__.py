@@ -615,8 +615,78 @@ class NCBIdna:
             else:
                 time.sleep(random.uniform(0.25, 0.5))
 
+
+class Primer3:
     @staticmethod
-    def design_primers(variant, gene_name, species, sequence, exons, nb_primers, product_size_settings, ucsc_validation=False, only_validated="No"):
+    def design_primers(variant,
+                       gene_name,
+                       species,
+                       sequence,
+                       exons,
+                       PRIMER_NUM_RETURN=10,
+                       PRIMER_OPT_SIZE=20,
+                       PRIMER_MIN_SIZE=16,
+                       PRIMER_MAX_SIZE=24,
+                       PRIMER_OPT_TM=60.0,
+                       PRIMER_MIN_TM=57.0,
+                       PRIMER_MAX_TM=63.0,
+                       PRIMER_MIN_GC=40.0,
+                       PRIMER_MAX_GC=60.0,
+                       PRIMER_GC_CLAMP=0,
+                       PRIMER_MAX_POLY_X=5,
+                       PRIMER_MAX_END_STABILITY=9.0,
+                       PRIMER_MAX_TEMPLATE_MISPRIMING_TH=70.0,
+                       PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL=40.0,
+                       PRIMER_MAX_SELF_ANY_TH=45.0,
+                       PRIMER_MAX_SELF_END_TH=35.0,
+                       PRIMER_PAIR_MAX_COMPL_ANY_TH=45.0,
+                       PRIMER_PAIR_MAX_COMPL_END_TH=35.0,
+                       PRIMER_MAX_HAIRPIN_TH=24.0,
+                       PRIMER_MAX_TEMPLATE_MISPRIMING=24.0,
+                       PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL=12.0,
+                       PRIMER_MAX_SELF_ANY=8.0,
+                       PRIMER_MAX_SELF_END=3.0,
+                       PRIMER_PAIR_MAX_COMPL_ANY=8.0,
+                       PRIMER_PAIR_MAX_COMPL_END=3.0,
+                       PRIMER_THERMODYNAMIC_ALIGNMENT=1,
+                       PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT=1,
+                       PRIMER_PRODUCT_SIZE_RANGE=[80, 250],
+                       PRIMER_PICK_INTERNAL_OLIGO=0,
+                       PRIMER_INTERNAL_OPT_SIZE=20,
+                       PRIMER_INTERNAL_MIN_SIZE=18,
+                       PRIMER_INTERNAL_MAX_SIZE=24,
+                       PRIMER_INTERNAL_OPT_TM=60.0,
+                       PRIMER_INTERNAL_MIN_TM=57.0,
+                       PRIMER_INTERNAL_MAX_TM=63.0,
+                       PRIMER_INTERNAL_OPT_GC_PERCENT=50.0,
+                       PRIMER_INTERNAL_MIN_GC=20.0,
+                       PRIMER_INTERNAL_MAX_GC=80.0,
+                       PRIMER_MONOVALENT_CATION_CONC=50.0,
+                       PRIMER_DIVALENT_CATION_CONC=1.5,
+                       PRIMER_DNTP_CONC=0.6,
+                       PRIMER_SALT_CORRECTION=1,
+                       PRIMER_THERMODYNAMIC_PARAMETERS='SantaLucia1998',
+                       PRIMER_ANN_Oligo_CONC=50.0,
+                       ucsc_validation=False, only_validated="No"):
+
+        if not PRIMER_MIN_SIZE <= PRIMER_OPT_SIZE <= PRIMER_MAX_SIZE:
+            PRIMER_OPT_SIZE = (PRIMER_MAX_SIZE + PRIMER_MIN_SIZE) // 2
+            # Pense à print l'erreur
+        if not PRIMER_MIN_TM <= PRIMER_OPT_TM <= PRIMER_MAX_TM:
+            PRIMER_OPT_TM = (PRIMER_MAX_TM + PRIMER_MIN_TM) / 2
+            # Pense à print l'erreur
+        if not PRIMER_INTERNAL_MIN_SIZE <= PRIMER_INTERNAL_OPT_SIZE <= PRIMER_INTERNAL_MAX_SIZE:
+            PRIMER_INTERNAL_OPT_SIZE = (PRIMER_INTERNAL_MAX_SIZE + PRIMER_INTERNAL_MIN_SIZE) // 2
+            # Pense à print l'erreur
+        if not PRIMER_INTERNAL_MIN_TM <= PRIMER_INTERNAL_OPT_TM <= PRIMER_INTERNAL_MAX_TM:
+            PRIMER_INTERNAL_OPT_TM = (PRIMER_INTERNAL_MAX_TM + PRIMER_INTERNAL_MIN_TM) / 2
+            # Pense à print l'erreur
+        if not PRIMER_INTERNAL_MIN_GC <= PRIMER_INTERNAL_OPT_GC_PERCENT <= PRIMER_INTERNAL_MAX_GC:
+            PRIMER_INTERNAL_OPT_GC_PERCENT = (PRIMER_INTERNAL_MAX_GC + PRIMER_INTERNAL_MIN_GC) / 2
+
+        if PRIMER_SALT_CORRECTION == 1 and PRIMER_THERMODYNAMIC_PARAMETERS == 'SantaLucia1998':
+            tm_method, salt_corrections_method = 'santalucia', "santalucia"
+
         try:
             simplified_sequence = "".join(sequence[start:end + 1] for start, end in exons)
 
@@ -629,86 +699,86 @@ class NCBIdna:
                 'PRIMER_TASK': 'generic',  # Generic primer generation
 
                 # Settings for primers (size and content)
-                'PRIMER_OPT_SIZE': 20,  # Optimal primer size
-                'PRIMER_MIN_SIZE': 16,  # Minimum primer size
-                'PRIMER_MAX_SIZE': 24,  # Maximum primer size
-                'PRIMER_OPT_TM': 60.0,  # Optimal melting temperature (°C)
-                'PRIMER_MIN_TM': 57.0,  # Minimum melting temperature (°C)
-                'PRIMER_MAX_TM': 63.0,  # Maximum melting temperature (°C)
-                'PRIMER_MIN_GC': 40.0,  # Minimum GC percentage (%)
-                'PRIMER_MAX_GC': 60.0,  # Maximum GC percentage (%)
-                'PRIMER_GC_CLAMP': 0,  # GC clamping at end 3' (minimum number of G/C)
-                'PRIMER_MAX_POLY_X': 5,  # Maximum number of repeated bases (ex: AAAAA)
+                'PRIMER_OPT_SIZE': PRIMER_OPT_SIZE,  # Optimal primer size
+                'PRIMER_MIN_SIZE': PRIMER_MIN_SIZE,  # Minimum primer size
+                'PRIMER_MAX_SIZE': PRIMER_MAX_SIZE,  # Maximum primer size
+                'PRIMER_OPT_TM': PRIMER_OPT_TM,  # Optimal melting temperature (°C)
+                'PRIMER_MIN_TM': PRIMER_MIN_TM,  # Minimum melting temperature (°C)
+                'PRIMER_MAX_TM': PRIMER_MAX_TM,  # Maximum melting temperature (°C)
+                'PRIMER_MIN_GC': PRIMER_MIN_GC,  # Minimum GC percentage (%)
+                'PRIMER_MAX_GC': PRIMER_MAX_GC,  # Maximum GC percentage (%)
+                'PRIMER_GC_CLAMP': PRIMER_GC_CLAMP,  # GC clamping at end 3' (minimum number of G/C)
+                'PRIMER_MAX_POLY_X': PRIMER_MAX_POLY_X,  # Maximum number of repeated bases (ex: AAAAA)
 
                 # Parameters for stability at the 3' end
-                'PRIMER_MAX_END_STABILITY': 9.0,  # Maximum end stability 3'
+                'PRIMER_MAX_END_STABILITY': PRIMER_MAX_END_STABILITY,  # Maximum end stability 3'
 
                 # Secondary alignment (Thermodynamic model)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH': 70.0,  # Bad template match (primer pairs)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL': 40.0,  # Bad match for single primer
-                'PRIMER_MAX_SELF_ANY_TH': 45.0,  # Internal matching (all sites, thermodynamics)
-                'PRIMER_MAX_SELF_END_TH': 35.0,  # Internal pairing (3' end, thermodynamic)
-                'PRIMER_PAIR_MAX_COMPL_ANY_TH': 45.0,  # Primer pairing (all sites, thermodynamics)
-                'PRIMER_PAIR_MAX_COMPL_END_TH': 35.0,  # Pairing between primers (3' end, thermodynamics)
-                'PRIMER_MAX_HAIRPIN_TH': 24.0,  # Maximum free energy for hairpins
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH': PRIMER_MAX_TEMPLATE_MISPRIMING_TH,  # Bad template match (primer pairs)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL': PRIMER_MAX_TEMPLATE_MISPRIMING_TH_TMPL,  # Bad match for single primer
+                'PRIMER_MAX_SELF_ANY_TH': PRIMER_MAX_SELF_ANY_TH,  # Internal matching (all sites, thermodynamics)
+                'PRIMER_MAX_SELF_END_TH': PRIMER_MAX_SELF_END_TH,  # Internal pairing (3' end, thermodynamic)
+                'PRIMER_PAIR_MAX_COMPL_ANY_TH': PRIMER_PAIR_MAX_COMPL_ANY_TH,  # Primer pairing (all sites, thermodynamics)
+                'PRIMER_PAIR_MAX_COMPL_END_TH': PRIMER_PAIR_MAX_COMPL_END_TH,  # Pairing between primers (3' end, thermodynamics)
+                'PRIMER_MAX_HAIRPIN_TH': PRIMER_MAX_HAIRPIN_TH,  # Maximum free energy for hairpins
 
                 # Secondary alignment (Old model)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING': 24.0,  # Bad template matching (primer pairs, classic)
-                'PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL': 12.0,  # Bad match for single primer (classic)
-                'PRIMER_MAX_SELF_ANY': 8.0,  # Internal pairing (all sites, classic)
-                'PRIMER_MAX_SELF_END': 3.0,  # Internal pairing (3' end, classic)
-                'PRIMER_PAIR_MAX_COMPL_ANY': 8.0,  # Primer pairing (all sites, classic)
-                'PRIMER_PAIR_MAX_COMPL_END': 3.0,  # Pairing between primers (3' end, classic)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING': PRIMER_MAX_TEMPLATE_MISPRIMING,  # Bad template matching (primer pairs, classic)
+                'PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL': PRIMER_MAX_TEMPLATE_MISPRIMING_TMPL,  # Bad match for single primer (classic)
+                'PRIMER_MAX_SELF_ANY': PRIMER_MAX_SELF_ANY,  # Internal pairing (all sites, classic)
+                'PRIMER_MAX_SELF_END': PRIMER_MAX_SELF_END,  # Internal pairing (3' end, classic)
+                'PRIMER_PAIR_MAX_COMPL_ANY': PRIMER_PAIR_MAX_COMPL_ANY,  # Primer pairing (all sites, classic)
+                'PRIMER_PAIR_MAX_COMPL_END': PRIMER_PAIR_MAX_COMPL_END,  # Pairing between primers (3' end, classic)
 
                 # Search for secondary alignments
-                'PRIMER_THERMODYNAMIC_ALIGNMENT': 1,  # Use thermodynamic model
-                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': 1 if len(sequence) < 10000 else 0,  # Also align with thermodynamic model (maybe slow)
+                'PRIMER_THERMODYNAMIC_ALIGNMENT': PRIMER_THERMODYNAMIC_ALIGNMENT,  # Use thermodynamic model
+                'PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT': PRIMER_THERMODYNAMIC_TEMPLATE_ALIGNMENT if len(sequence) < 10000 else 0,  # Also align with thermodynamic model (maybe slow)
 
                 # General settings for pairs
-                'PRIMER_NUM_RETURN': 1,  # Maximum number of pairs returned
-                'PRIMER_PRODUCT_SIZE_RANGE': [product_size_settings],  # Product size range
+                'PRIMER_NUM_RETURN': PRIMER_NUM_RETURN,  # Maximum number of pairs returned
+                'PRIMER_PRODUCT_SIZE_RANGE': [PRIMER_PRODUCT_SIZE_RANGE],  # Product size range
 
                 # Enable selection of internal hybridization oligos
-                'PRIMER_PICK_INTERNAL_OLIGO': 0,  # 1 to enable, 0 to disable
+                'PRIMER_PICK_INTERNAL_OLIGO': PRIMER_PICK_INTERNAL_OLIGO,  # 1 to enable, 0 to disable
 
                 # Size parameters for internal oligos
-                'PRIMER_INTERNAL_MIN_SIZE': 18,  # Minimum size
-                'PRIMER_INTERNAL_OPT_SIZE': 20,  # Optimal size
-                'PRIMER_INTERNAL_MAX_SIZE': 24,  # Maximum size
+                'PRIMER_INTERNAL_OPT_SIZE': PRIMER_INTERNAL_OPT_SIZE,  # Optimal size
+                'PRIMER_INTERNAL_MIN_SIZE': PRIMER_INTERNAL_MIN_SIZE,  # Minimum size
+                'PRIMER_INTERNAL_MAX_SIZE': PRIMER_INTERNAL_MAX_SIZE,  # Maximum size
 
                 # Melting temperature (Tm) for internal oligos
-                'PRIMER_INTERNAL_MIN_TM': 57.0,  # Minimum Tm (°C)
-                'PRIMER_INTERNAL_OPT_TM': 60.0,  # Optimal Tm (°C)
-                'PRIMER_INTERNAL_MAX_TM': 63.0,  # Maximum Tm (°C)
+                'PRIMER_INTERNAL_OPT_TM': PRIMER_INTERNAL_OPT_TM,  # Optimal Tm (°C)
+                'PRIMER_INTERNAL_MIN_TM': PRIMER_INTERNAL_MIN_TM,  # Minimum Tm (°C)
+                'PRIMER_INTERNAL_MAX_TM': PRIMER_INTERNAL_MAX_TM,  # Maximum Tm (°C)
 
                 # GC percentage for internal oligos
-                'PRIMER_INTERNAL_MIN_GC': 20.0,  # Minimum GC percentage
-                'PRIMER_INTERNAL_OPT_GC_PERCENT': 50.0,  # Optimal GC percentage
-                'PRIMER_INTERNAL_MAX_GC': 80.0,  # Maximum GC percentage
+                'PRIMER_INTERNAL_OPT_GC_PERCENT': PRIMER_INTERNAL_OPT_GC_PERCENT,  # Optimal GC percentage
+                'PRIMER_INTERNAL_MIN_GC': PRIMER_INTERNAL_MIN_GC,  # Minimum GC percentage
+                'PRIMER_INTERNAL_MAX_GC': PRIMER_INTERNAL_MAX_GC,  # Maximum GC percentage
 
                 # Concentration of monovalent cations (e.g.: Na+)
-                'PRIMER_MONOVALENT_CATION_CONC': 50.0,  # In mM (default is 50 mM)
+                'PRIMER_MONOVALENT_CATION_CONC': PRIMER_MONOVALENT_CATION_CONC,  # In mM (default is 50 mM)
 
                 # Concentration of divalent cations (e.g. Mg2+)
-                'PRIMER_DIVALENT_CATION_CONC': 1.5,  # In mM (default is 1.5 mM)
+                'PRIMER_DIVALENT_CATION_CONC': PRIMER_DIVALENT_CATION_CONC,  # In mM (default is 1.5 mM)
 
                 # Concentration of dNTPs
-                'PRIMER_DNTP_CONC': 0.6,  # In mM (default is 0.8 mM)
+                'PRIMER_DNTP_CONC': PRIMER_DNTP_CONC,  # In mM (default is 0.8 mM)
 
                 # Salt correction formula (using Santa Lucia 1998 formula)
-                'PRIMER_SALT_CORRECTION': 1,  # 1 to use the Santa Lucia 1998 correction
+                'PRIMER_SALT_CORRECTION': PRIMER_SALT_CORRECTION,  # 1 to use the Santa Lucia 1998 correction
 
                 # Thermodynamic parameters (table of parameters to calculate Tm)
-                'PRIMER_THERMODYNAMIC_PARAMETERS': 'SantaLucia1998',  # Use Santa Lucia 1998 table
+                'PRIMER_THERMODYNAMIC_PARAMETERS': PRIMER_THERMODYNAMIC_PARAMETERS,  # Use Santa Lucia 1998 table
 
                 # Concentration of the oligonucleotide for the init
-                'PRIMER_ANN_Oligo_CONC': 50.0,
+                'PRIMER_ANN_Oligo_CONC': PRIMER_ANN_Oligo_CONC,
             }
 
             primers = []
 
             exon_lengths = [end - start for start, end in exons]
-            cumulative_lengths = [0] + list(NCBIdna.cumsum(exon_lengths))
+            cumulative_lengths = [0] + list(Primer3.cumsum(exon_lengths))
 
             if len(exons) > 1:
                 exon_pairs = [(i, j) for i in range(len(exons)) for j in range(i + 1, len(exons))]
@@ -718,16 +788,16 @@ class NCBIdna:
 
             seen_primers = set()
 
-            with tqdm(total=nb_primers, desc=f"Generating primers for {variant} {gene_name}", unit="primer") as pbar:
+            with tqdm(total=PRIMER_NUM_RETURN, desc=f"Generating primers for {variant} {gene_name}", unit="primer") as pbar:
                 no_progress_count = 0
                 max_no_progress = 2
 
-                while len(primers) < nb_primers:
+                while len(primers) < PRIMER_NUM_RETURN:
                     primer3_params['PRIMER_NUM_RETURN'] += 1
                     primers_found_in_iteration = False
 
                     for i, j in exon_pairs:
-                        if len(primers) >= nb_primers:
+                        if len(primers) >= PRIMER_NUM_RETURN:
                             break
 
                         exon1_start, exon1_end = exons[i]
@@ -751,7 +821,7 @@ class NCBIdna:
                             if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results[
                                 'PRIMER_PAIR_NUM_RETURNED'] > 0:
                                 for k in range(primer_results['PRIMER_PAIR_NUM_RETURNED']):
-                                    if len(primers) >= nb_primers:
+                                    if len(primers) >= PRIMER_NUM_RETURN:
                                         break
 
                                     left_key = f'PRIMER_LEFT_{k}_SEQUENCE'
@@ -768,9 +838,9 @@ class NCBIdna:
                                         left_position = primer_results.get(f'PRIMER_LEFT_{k}')[0]
                                         right_position = primer_results.get(f'PRIMER_RIGHT_{k}')[0]
 
-                                        left_absolute = NCBIdna.convert_to_absolute(left_position, exons,
+                                        left_absolute = Primer3.convert_to_absolute(left_position, exons,
                                                                                     cumulative_lengths)
-                                        right_absolute = NCBIdna.convert_to_absolute(right_position, exons,
+                                        right_absolute = Primer3.convert_to_absolute(right_position, exons,
                                                                                      cumulative_lengths)
 
                                         amplicon_size = right_position - left_position + 1
@@ -780,22 +850,23 @@ class NCBIdna:
 
                                         tm_amplicon = primer3.bindings.calc_tm(
                                             str(amplicon_seq),
-                                            mv_conc=50.0,  # Na+ mM
-                                            dv_conc=1.5,  # Mg2+ mM
-                                            dntp_conc=0.6,  # dNTPs mM
-                                            dna_conc=50.0,  # oligo nM
-                                            salt_corrections_method="santalucia"
+                                            mv_conc=PRIMER_MONOVALENT_CATION_CONC,
+                                            dv_conc=PRIMER_DIVALENT_CATION_CONC,  # Mg2+ mM
+                                            dntp_conc=PRIMER_DNTP_CONC,  # dNTPs mM
+                                            dna_conc=PRIMER_ANN_Oligo_CONC,  # oligo nM
+                                            tm_method=tm_method,
+                                            salt_corrections_method=salt_corrections_method
                                         )
 
                                         if species in ucsc_species.keys() and ucsc_validation is True:
                                             org = ucsc_species[species]["org"]
                                             db = ucsc_species[species]["db"]
                                             wp_targets = ucsc_species[species]["wp_target"]
-                                            validation_relative, validation_absolute, sequence_relative, sequence_absolute = NCBIdna.fetch_ucsc_pcr_results(
+                                            validation_relative, validation_absolute, sequence_relative, sequence_absolute = Primer3.fetch_ucsc_pcr_results(
                                                 species, org, db, wp_targets, left_seq, right_seq,
-                                                amplicon_size_abs, product_size_settings[1])
+                                                amplicon_size_abs, PRIMER_PRODUCT_SIZE_RANGE[1])
                                         else:
-                                            validation_relative, validation_absolute = None, None
+                                            validation_relative, validation_absolute, sequence_relative, sequence_absolute = None, None, None, None
 
                                         if only_validated != "No":
                                             if only_validated == "qPCR":
@@ -981,7 +1052,7 @@ class NCBIdna:
 
         # Fallback NCBI PCR
         if not sequence_relative:
-            ncbi_pcr_results = NCBIdna.ncbi_pcr_in_silico(species, wp_f, wp_r)
+            ncbi_pcr_results = Primer3.ncbi_pcr_in_silico(species, wp_f, wp_r)
             filtered = [res for res in ncbi_pcr_results if
                         res["product_length"] and res["product_length"] < 100 + max_product_size]
 
