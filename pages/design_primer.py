@@ -570,6 +570,11 @@ if st.session_state['all_variants']:
 else:
     st.warning('You have not extracted any information')
 
+
+st.divider()
+
+st.subheader('Primers settings')
+
 col_settings1, col_settings2, col_settings3 = st.columns(3, gap="small")
 
 if "min_amplicon_size" not in st.session_state:
@@ -659,7 +664,7 @@ col_settings3.markdown("")
 st.session_state["ucsc_validation"] = col_settings3.toggle("UCSC/NCBI primers PCR in-silico validation", False)
 if st.session_state["ucsc_validation"] is True:
     st.session_state["only_validated"] = col_settings3.radio("Display only validated", ["No", "qPCR", "Genome", "Both"],
-                                                  horizontal=True)
+                                                             horizontal=True)
 
 st.divider()
 col1_button, col2_button = st.columns(2, gap="small")
@@ -784,7 +789,7 @@ if col2_button.button('🏃🏽‍♂️‍➡️ Run design primers'):
                 if not st.session_state.get("ucsc_validation", False):
                     all_columns = [col for col in all_columns if col != "Validated"]
                     all_columns = [col for col in all_columns if col != "Validated Abs."]
-
+                all_columns = [col for col in all_columns if col != "validation_relative_sequences"]
                 abs_columns = [col for col in all_columns if "Abs." in col]
                 other_columns = [col for col in all_columns if col not in abs_columns]
                 ordered_columns = other_columns + abs_columns

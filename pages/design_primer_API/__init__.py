@@ -24,6 +24,7 @@
 import random
 import re
 import time
+import html
 import xml.etree.ElementTree as ET
 
 import primer3
@@ -49,8 +50,8 @@ headers = {
 }
 
 ucsc_species = {
-    "Homo sapiens": {'org': 'Human', 'db': 'hg38', 'wp_target': ['genome', 'hg38KgSeqV47']},
-    "Mus musculus": {'org': 'Mouse', 'db': 'mm39', 'wp_target': ['genome', 'mm39KgSeqVM36']},
+    "Homo sapiens": {'org': 'Human', 'db': 'hg38', 'wp_target': ['genome', 'hg38KgSeqV48']},
+    "Mus musculus": {'org': 'Mouse', 'db': 'mm39', 'wp_target': ['genome', 'mm39KgSeqVM37']},
     "Anopheles gambiae": {'org': 'A.+gambiae', 'db': 'anoGam3', 'wp_target': ['genome']},
     "Apis mellifera": {'org': 'A.+mellifera', 'db': 'apiMel2', 'wp_target': ['genome']},
     "Xenopus laevis": {'org': 'African+clawed+frog', 'db': 'xenLae2', 'wp_target': ['genome']},
@@ -744,7 +745,7 @@ class Primer3:
                     sequence) < 10000 else 0,  # Also align with thermodynamic model (maybe slow)
 
                 # General settings for pairs
-                'PRIMER_NUM_RETURN': PRIMER_NUM_RETURN,  # Maximum number of pairs returned
+                'PRIMER_NUM_RETURN': 1,  # Maximum number of pairs returned
                 'PRIMER_PRODUCT_SIZE_RANGE': [PRIMER_PRODUCT_SIZE_RANGE],  # Product size range
 
                 # Enable selection of internal hybridization oligos
@@ -1009,12 +1010,15 @@ class Primer3:
                     validation_relative = f"Error {response.status_code}"
                 continue
 
+            # print(response.text)
             soup = BeautifulSoup(response.text, "html.parser")
             result_section = soup.find("pre")
 
             parsed_results = []
             if result_section:
-                lines = result_section.text.strip().split("\n")
+                # DÉCODE les entités HTML comme &gt; en >
+                decoded_text = html.unescape(result_section.text)
+                lines = decoded_text.strip().split("\n")
                 current_record = {}
 
                 for line in lines:
@@ -1063,6 +1067,7 @@ class Primer3:
                 else:
                     validation_relative = "Not found"
                     sequence_relative = []
+
 
         # Fallback NCBI PCR
         if not sequence_relative:
@@ -1121,7 +1126,7 @@ class Primer3:
         response = session.get(url)
 
         if response.status_code != 200:
-            print(f"❌ Erreur lors de la requête : {response.status_code}")
+            print(f"❌ Error request: {response.status_code}")
             exit()
 
         soup = BeautifulSoup(response.text, "html.parser")
@@ -1133,10 +1138,10 @@ class Primer3:
             if match:
                 job_key = match.group(1)
             else:
-                print("❌ Impossible de récupérer le JOB ID.")
+                print("❌ JOB ID not found")
                 exit()
 
-        print(f"✅ JOB ID récupéré : {job_key}")
+        print(f"JOB ID : {job_key}")
 
         status_url = f"https://www.ncbi.nlm.nih.gov/tools/primer-blast/primertool.cgi?job_key={job_key}&CMD=get"
 
@@ -1145,17 +1150,16 @@ class Primer3:
             status_response = session.get(status_url)
 
             soup = BeautifulSoup(status_response.text, "html.parser")
-            print(soup)
+            # print(soup)
 
             primer_pair = soup.find("a", {"name": "0"})
             forward_primer = soup.find("th", string="Forward primer")
             reverse_primer = soup.find("th", string="Reverse primer")
 
             if primer_pair and forward_primer and reverse_primer:
-                print("✅ Résultats prêts !")
                 break
             else:
-                print("⏳ En attente des résultats...")
+                print("Waiting results...")
 
         results = []
 
