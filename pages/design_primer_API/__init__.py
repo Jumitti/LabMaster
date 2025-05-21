@@ -1010,13 +1010,11 @@ class Primer3:
                     validation_relative = f"Error {response.status_code}"
                 continue
 
-            # print(response.text)
             soup = BeautifulSoup(response.text, "html.parser")
             result_section = soup.find("pre")
 
             parsed_results = []
             if result_section:
-                # DÉCODE les entités HTML comme &gt; en >
                 decoded_text = html.unescape(result_section.text)
                 lines = decoded_text.strip().split("\n")
                 current_record = {}
