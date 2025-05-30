@@ -302,6 +302,11 @@ def graphique(exons, primers, normalization=False):
 # Page config
 page_config()
 
+if st.button("You can also check your own primers by clicking here ☺"):
+    st.switch_page("pages/check_primer.py")
+
+st.divider()
+
 st.subheader('Genes info extraction')
 colextract1, colextract2, colextract3 = st.columns([0.5, 1.5, 1.5], gap="small")
 
@@ -810,3 +815,6 @@ if col2_button.button('🏃🏽‍♂️‍➡️ Run design primers'):
                                                  file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
     except Exception as e:
         print(e)
+
+if st.button("You can also check your own primers by clicking here ☺", key="second"):
+    st.switch_page("pages/check_primer.py")
