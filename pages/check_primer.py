@@ -105,13 +105,19 @@ if st.session_state.primers:
             st.rerun()
 
     if st.button("Run"):
-        if species in ucsc_species.keys() and ucsc_validation is True:
-            org = ucsc_species[species]["org"]
-            db = ucsc_species[species]["db"]
-            wp_targets = ucsc_species[species]["wp_target"]
-            validation_relative, validation_absolute, sequence_relative, sequence_absolute = Primer3.fetch_ucsc_pcr_results(
-                species, org, db, wp_targets, left_seq, right_seq,
-                amplicon_size_abs, PRIMER_PRODUCT_SIZE_RANGE[1])
+        results = []
+        for primer in st.session_state.primers:
+            left_seq = primer["Forward"]
+            right_seq = primer["Reverse"]
+            if species in ucsc_species:
+                org = ucsc_species[species]["org"]
+                db = ucsc_species[species]["db"]
+                wp_targets = ucsc_species[species]["wp_target"]
+                val_rel, val_abs, seq_rel, seq_abs = Primer3.fetch_ucsc_pcr_results(
+                    left_seq, right_seq, species, org, db, wp_targets)
+                results.append(seq_rel)
+        st.write(results)
+
 
 else:
     st.info("No primers submitted yet.")
