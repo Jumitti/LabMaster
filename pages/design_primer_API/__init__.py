@@ -671,7 +671,8 @@ class Primer3:
                        PRIMER_THERMODYNAMIC_PARAMETERS='SantaLucia1998',
                        ucsc_validation=False,
                        only_validated="No",
-                       reverse_exon_order=False):
+                       reverse_exon_order=False,
+                       progress_bar=None):
 
         if not PRIMER_MIN_SIZE <= PRIMER_OPT_SIZE <= PRIMER_MAX_SIZE:
             PRIMER_OPT_SIZE = (PRIMER_MAX_SIZE + PRIMER_MIN_SIZE) // 2
@@ -945,6 +946,8 @@ class Primer3:
 
                                         print("SAVED", left_seq, right_seq, validation_relative, validation_absolute)
                                         pbar.update(1)
+                                        if progress_bar is not None:
+                                            progress_bar.update(1)
                                         seen_primers.add(primer_key)
                                         primers_found_in_iteration = True
 
@@ -1079,35 +1082,49 @@ class Primer3:
 
         # Fallback NCBI PCR
         if not sequence_relative:
+            sequence_relative = []
+
             ncbi_pcr_results = Primer3.ncbi_pcr_in_silico(species, wp_f, wp_r)
+
             if len(ncbi_pcr_results) > 0:
                 filtered = [res for res in ncbi_pcr_results if
                             res["product_length"] and res["product_length"] < 100 + max_product_size]
 
                 if len(set(res["product_length"] for res in filtered)) <= 1:
                     validation_relative = True
-                    if filtered:
-                        sequence_relative = [{
-                            "name": "NCBI result",
-                            "size": filtered[0]["product_length"],
-                            "sequence": filtered[0].get("amplified_seq")
-                        }]
-                else:
-                    validation_relative = False
+
+                for i, res in enumerate(filtered):
+                    sequence_relative.append({
+                        "size": res["product_length"],
+                        "gene": res.get("name", "N/A") + " " + res.get("gene", "N/A"),
+                        "template_fwd": {
+                            "start - end": res.get("forward_start", "N/A") + " -> " + res.get("forward_end", "N/A"),
+                            "primer": res.get("forward_primer", "N/A"),
+                            "template": res.get("forward_template", "N/A"),
+                        },
+                        "template_rev": {
+                            "start - end": res.get("reverse_start", "N/A") + " -> " + res.get("reverse_end", "N/A"),
+                            "primer": res.get("reverse_primer", "N/A"),
+                            "template": res.get("reverse_template", "N/A"),
+                        }
+                    })
+
             else:
                 validation_relative = False
 
+        print(validation_relative)
         return validation_relative, validation_absolute, sequence_relative, sequence_absolute
 
     @staticmethod
     def ncbi_pcr_in_silico(species, primer_fwd, primer_rev):
+
         url = (
             "https://www.ncbi.nlm.nih.gov/tools/primer-blast/primertool.cgi?"
             "CMD=request&CON_ANEAL_OLIGO=50.0&CON_DNTPS=0.6&DIVA_CATIONS=1.5&EVALUE=30000"
             "&GC_CLAMP=0&HITSIZE=50000&LOW_COMPLEXITY_FILTER=on&MAX_CANDIDATE_PRIMER=500"
             "&MAX_INTRON_SIZE=1000000&MAX_TARGET_PER_TEMPLATE=100&MAX_TARGET_SIZE=4000"
             "&MIN_INTRON_SIZE=1000&MISMATCH_REGION_LENGTH=5&MONO_CATIONS=50.0"
-            f"&ORGANISM={species}&OVERLAP_3END=4&OVERLAP_5END=7&POLYX=5"
+            "&OVERLAP_3END=4&OVERLAP_5END=7&POLYX=5"
             "&PRIMER_3END_SPECIFICITY_MISMATCH=1&PRIMER_INTERNAL_OLIGO_MAX_GC=80.0"
             "&PRIMER_INTERNAL_OLIGO_MAX_SIZE=27&PRIMER_INTERNAL_OLIGO_MAX_TM=63.0"
             "&PRIMER_INTERNAL_OLIGO_MIN_GC=20.0&PRIMER_INTERNAL_OLIGO_MIN_SIZE=18"
@@ -1132,6 +1149,9 @@ class Primer3:
             "&TOTAL_MISMATCH_IGNORE=6&TOTAL_PRIMER_SPECIFICITY_MISMATCH=1&UNGAPPED_BLAST=on"
             "&USER_TYPE=2&WORD_SIZE=7"
         )
+
+        if species:
+            url += f"&ORGANISM={species}"
 
         session = requests.Session()
         response = session.get(url)
@@ -1161,7 +1181,6 @@ class Primer3:
             status_response = session.get(status_url)
 
             soup = BeautifulSoup(status_response.text, "html.parser")
-            print(soup)
 
             primer_pair = soup.find("a", {"name": "0"})
             forward_primer = soup.find("th", string="Forward primer")
@@ -1175,7 +1194,6 @@ class Primer3:
         results = []
 
         entries = soup.find_all("a", href=re.compile(r"viewer.fcgi\?db=nucleotide"))
-        print(entries)
 
         if len(entries) > 0:
             for entry in entries:
@@ -1218,6 +1236,5 @@ class Primer3:
                     "reverse_template": reverse_template,
                     "reverse_end": reverse_end,
                 })
-                print(results)
 
         return results

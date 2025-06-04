@@ -688,10 +688,10 @@ if col2_button.button('🏃🏽‍♂️‍➡️ Run design primers'):
         primers_result = []
 
         if len(st.session_state['all_variants']) > 0:
-            progress_bar = stqdm(enumerate(st.session_state['all_variants'].items()),
-                                 total=len(st.session_state['all_variants']),
-                                 desc="Initializing")
-            for i, (variant, data) in progress_bar:
+            total_primers_expected = len(st.session_state['all_variants']) * PRIMER_NUM_RETURN
+            progress_bar = stqdm(total=total_primers_expected, desc="Initializing")
+
+            for variant, data in st.session_state['all_variants'].items():
                 progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
 
                 primers = Primer3.design_primers(variant=variant,
@@ -712,7 +712,8 @@ if col2_button.button('🏃🏽‍♂️‍➡️ Run design primers'):
                                                                             st.session_state["max_amplicon_size"]],
                                                  ucsc_validation=st.session_state["ucsc_validation"],
                                                  only_validated=st.session_state["only_validated"],
-                                                 reverse_exon_order=st.session_state['reverse_exon_order'])
+                                                 reverse_exon_order=st.session_state['reverse_exon_order'],
+                                                 progress_bar=progress_bar)
 
                 if len(primers) > 0:
                     for idx, primer_set in enumerate(primers):
