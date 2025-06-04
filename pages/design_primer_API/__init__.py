@@ -670,7 +670,8 @@ class Primer3:
                        PRIMER_SALT_CORRECTION=1,
                        PRIMER_THERMODYNAMIC_PARAMETERS='SantaLucia1998',
                        ucsc_validation=False,
-                       only_validated="No"):
+                       only_validated="No",
+                       reverse_exon_order=False):
 
         if not PRIMER_MIN_SIZE <= PRIMER_OPT_SIZE <= PRIMER_MAX_SIZE:
             PRIMER_OPT_SIZE = (PRIMER_MAX_SIZE + PRIMER_MIN_SIZE) // 2
@@ -791,8 +792,12 @@ class Primer3:
             cumulative_lengths = [0] + list(Primer3.cumsum(exon_lengths))
 
             if len(exons) > 1:
-                exon_pairs = [(i, j) for i in range(len(exons)) for j in range(i + 1, len(exons))]
-
+                if reverse_exon_order:
+                    exon_pairs = [(j, i) for i in range(len(exons) - 1, -1, -1)
+                                  for j in range(i - 1, -1, -1)]
+                else:
+                    exon_pairs = [(i, j) for i in range(len(exons))
+                                  for j in range(i + 1, len(exons))]
             else:
                 exon_pairs = [(0, 0)]
 
@@ -829,7 +834,8 @@ class Primer3:
 
                             primer_results = primer3.bindings.design_primers(primer3_input, primer3_params)
 
-                            if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results['PRIMER_PAIR_NUM_RETURNED'] > 0:
+                            if 'PRIMER_PAIR_NUM_RETURNED' in primer_results and primer_results[
+                                'PRIMER_PAIR_NUM_RETURNED'] > 0:
                                 for k in range(primer_results['PRIMER_PAIR_NUM_RETURNED']):
                                     if len(primers) >= PRIMER_NUM_RETURN:
                                         break
@@ -873,7 +879,7 @@ class Primer3:
                                             db = ucsc_species[species]["db"]
                                             wp_targets = ucsc_species[species]["wp_target"]
                                             validation_relative, validation_absolute, sequence_relative, sequence_absolute = Primer3.fetch_ucsc_pcr_results(
-                                                species, org, db, wp_targets, left_seq, right_seq,
+                                                left_seq, right_seq, species, org, db, wp_targets,
                                                 amplicon_size_abs, PRIMER_PRODUCT_SIZE_RANGE[1])
                                         else:
                                             validation_relative, validation_absolute, sequence_relative, sequence_absolute = None, None, None, None
@@ -973,114 +979,121 @@ class Primer3:
         return -1
 
     @staticmethod
-    def fetch_ucsc_pcr_results(species, org, db, wp_targets, wp_f, wp_r, amplicon_size_abs, max_product_size):
+    def fetch_ucsc_pcr_results(wp_f, wp_r, species=None, org=None, db=None, wp_targets=None, amplicon_size_abs=None,
+                               max_product_size=None):
         validation_relative = None
         validation_absolute = None
         sequence_relative = []
         sequence_absolute = []
 
-        for wp_target in wp_targets:
-            if wp_target == "genome":
-                amplicon_size = amplicon_size_abs + 100
-            else:
-                amplicon_size = 100 + max_product_size
-
-            base_url = "https://genome.ucsc.edu/cgi-bin/hgPcr"
-            params = {
-                "org": org,
-                "db": db,
-                "wp_target": wp_target,
-                "wp_f": wp_f,
-                "wp_r": wp_r,
-                "Submit": "Submit",
-                "wp_size": amplicon_size * 2,
-                "wp_perfect": 15,
-                "wp_good": 15,
-                "boolshad.wp_flipReverse": 0,
-                "wp_append": "on",
-                "boolshad.wp_append": 0,
-            }
-
-            response = requests.get(base_url, params=params)
-
-            if response.status_code != 200:
-                if wp_target == "genome":
-                    validation_absolute = f"Error {response.status_code}"
+        if len(wp_targets) > 0:
+            for wp_target in wp_targets:
+                if amplicon_size_abs is not None and max_product_size is not None:
+                    if wp_target == "genome":
+                        amplicon_size = amplicon_size_abs + 100
+                    else:
+                        amplicon_size = 100 + max_product_size
                 else:
-                    validation_relative = f"Error {response.status_code}"
-                continue
+                    amplicon_size = 2000
 
-            soup = BeautifulSoup(response.text, "html.parser")
-            result_section = soup.find("pre")
+                base_url = "https://genome.ucsc.edu/cgi-bin/hgPcr"
+                params = {
+                    "org": org,
+                    "db": db,
+                    "wp_target": wp_target,
+                    "wp_f": wp_f,
+                    "wp_r": wp_r,
+                    "Submit": "Submit",
+                    "wp_size": amplicon_size * 2,
+                    "wp_perfect": 15,
+                    "wp_good": 15,
+                    "boolshad.wp_flipReverse": 0,
+                    "wp_append": "on",
+                    "boolshad.wp_append": 0,
+                }
 
-            parsed_results = []
-            if result_section:
-                decoded_text = html.unescape(result_section.text)
-                lines = decoded_text.strip().split("\n")
-                current_record = {}
+                response = requests.get(base_url, params=params)
 
-                for line in lines:
-                    header_match = re.match(r"^>(.+?)\s+(\d+)bp", line)
-                    if header_match:
-                        if "sequence" in current_record:
-                            parsed_results.append(current_record)
-                            current_record = {}
-                        current_record["name"] = header_match.group(1).strip()
-                        current_record["size"] = int(header_match.group(2))
-                        current_record["sequence"] = ""
-                    elif current_record:
-                        current_record["sequence"] += line.strip()
+                if response.status_code != 200:
+                    if wp_target == "genome":
+                        validation_absolute = f"Error {response.status_code}"
+                    else:
+                        validation_relative = f"Error {response.status_code}"
+                    continue
 
-                if current_record:
-                    parsed_results.append(current_record)
+                soup = BeautifulSoup(response.text, "html.parser")
+                result_section = soup.find("pre")
 
-                sizes = [record["size"] for record in parsed_results]
+                parsed_results = []
+                if result_section:
+                    decoded_text = html.unescape(result_section.text)
+                    lines = decoded_text.strip().split("\n")
+                    current_record = {}
 
-                if not sizes:
+                    for line in lines:
+                        header_match = re.match(r"^>(.+?)\s+(\d+)bp", line)
+                        if header_match:
+                            if "sequence" in current_record:
+                                parsed_results.append(current_record)
+                                current_record = {}
+                            current_record["name"] = header_match.group(1).strip()
+                            current_record["size"] = int(header_match.group(2))
+                            current_record["sequence"] = ""
+                        elif current_record:
+                            current_record["sequence"] += line.strip()
+
+                    if current_record:
+                        parsed_results.append(current_record)
+
+                    sizes = [record["size"] for record in parsed_results]
+
+                    if not sizes:
+                        if wp_target == "genome":
+                            validation_absolute = "Not found"
+                            sequence_absolute = []
+                        else:
+                            validation_relative = "Not found"
+                            sequence_relative = []
+                    elif all(size == sizes[0] for size in sizes):
+                        if wp_target == "genome":
+                            validation_absolute = True
+                        else:
+                            validation_relative = True
+                    else:
+                        if wp_target == "genome":
+                            validation_absolute = False
+                        else:
+                            validation_relative = False
+
+                    if wp_target == "genome":
+                        sequence_absolute = parsed_results
+                    else:
+                        sequence_relative = parsed_results
+                else:
                     if wp_target == "genome":
                         validation_absolute = "Not found"
                         sequence_absolute = []
                     else:
                         validation_relative = "Not found"
                         sequence_relative = []
-                elif all(size == sizes[0] for size in sizes):
-                    if wp_target == "genome":
-                        validation_absolute = True
-                    else:
-                        validation_relative = True
-                else:
-                    if wp_target == "genome":
-                        validation_absolute = False
-                    else:
-                        validation_relative = False
-
-                if wp_target == "genome":
-                    sequence_absolute = parsed_results
-                else:
-                    sequence_relative = parsed_results
-            else:
-                if wp_target == "genome":
-                    validation_absolute = "Not found"
-                    sequence_absolute = []
-                else:
-                    validation_relative = "Not found"
-                    sequence_relative = []
-
 
         # Fallback NCBI PCR
         if not sequence_relative:
             ncbi_pcr_results = Primer3.ncbi_pcr_in_silico(species, wp_f, wp_r)
-            filtered = [res for res in ncbi_pcr_results if
-                        res["product_length"] and res["product_length"] < 100 + max_product_size]
+            if len(ncbi_pcr_results) > 0:
+                filtered = [res for res in ncbi_pcr_results if
+                            res["product_length"] and res["product_length"] < 100 + max_product_size]
 
-            if len(set(res["product_length"] for res in filtered)) <= 1:
-                validation_relative = True
-                if filtered:
-                    sequence_relative = [{
-                        "name": "NCBI result",
-                        "size": filtered[0]["product_length"],
-                        "sequence": filtered[0].get("amplified_seq")
-                    }]
+                if len(set(res["product_length"] for res in filtered)) <= 1:
+                    validation_relative = True
+                    if filtered:
+                        sequence_relative = [{
+                            "name": "NCBI result",
+                            "size": filtered[0]["product_length"],
+                            "sequence": filtered[0].get("amplified_seq")
+                        }]
+                else:
+                    validation_relative = False
             else:
                 validation_relative = False
 
@@ -1148,7 +1161,7 @@ class Primer3:
             status_response = session.get(status_url)
 
             soup = BeautifulSoup(status_response.text, "html.parser")
-            # print(soup)
+            print(soup)
 
             primer_pair = soup.find("a", {"name": "0"})
             forward_primer = soup.find("th", string="Forward primer")
@@ -1162,46 +1175,49 @@ class Primer3:
         results = []
 
         entries = soup.find_all("a", href=re.compile(r"viewer.fcgi\?db=nucleotide"))
+        print(entries)
 
-        for entry in entries:
-            gene_name = entry.text.strip()
-            gene_info = entry.next_sibling.strip() if entry.next_sibling else "N/A"
+        if len(entries) > 0:
+            for entry in entries:
+                gene_name = entry.text.strip()
+                gene_info = entry.next_sibling.strip() if entry.next_sibling else "N/A"
 
-            pre_block = entry.find_next("pre").text.strip()
+                pre_block = entry.find_next("pre").text.strip()
 
-            product_length_match = re.search(r"product length = (\d+)", pre_block)
-            product_length = int(product_length_match.group(1)) if product_length_match else None
+                product_length_match = re.search(r"product length = (\d+)", pre_block)
+                product_length = int(product_length_match.group(1)) if product_length_match else None
 
-            forward_primer, forward_start, forward_template, forward_end = "N/A", "N/A", "N/A", "N/A"
-            reverse_primer, reverse_start, reverse_template, reverse_end = "N/A", "N/A", "N/A", "N/A"
+                forward_primer, forward_start, forward_template, forward_end = "N/A", "N/A", "N/A", "N/A"
+                reverse_primer, reverse_start, reverse_template, reverse_end = "N/A", "N/A", "N/A", "N/A"
 
-            forward_match = re.search(r"Forward primer\s+\d+\s+([A-Za-z]+)\s+\d+", pre_block)
-            reverse_match = re.search(r"Reverse primer\s+\d+\s+([A-Za-z]+)\s+\d+", pre_block)
+                forward_match = re.search(r"Forward primer\s+\d+\s+([A-Za-z]+)\s+\d+", pre_block)
+                reverse_match = re.search(r"Reverse primer\s+\d+\s+([A-Za-z]+)\s+\d+", pre_block)
 
-            if forward_match:
-                forward_primer = forward_match.group(1)
-            if reverse_match:
-                reverse_primer = reverse_match.group(1)
+                if forward_match:
+                    forward_primer = forward_match.group(1)
+                if reverse_match:
+                    reverse_primer = reverse_match.group(1)
 
-            template_matches = re.findall(r"Template\s+(\d+)\s+([A-Za-z.\s]+)\s+(\d+)", pre_block)
+                template_matches = re.findall(r"Template\s+(\d+)\s+([A-Za-z.\s]+)\s+(\d+)", pre_block)
 
-            if len(template_matches) > 0:
-                forward_start, forward_template, forward_end = template_matches[0]
-            if len(template_matches) > 1:
-                reverse_start, reverse_template, reverse_end = template_matches[1]
+                if len(template_matches) > 0:
+                    forward_start, forward_template, forward_end = template_matches[0]
+                if len(template_matches) > 1:
+                    reverse_start, reverse_template, reverse_end = template_matches[1]
 
-            results.append({
-                "gene": gene_info,
-                "name": gene_name,
-                "product_length": product_length,
-                "forward_primer": forward_primer,
-                "forward_start": forward_start,
-                "forward_template": forward_template,
-                "forward_end": forward_end,
-                "reverse_primer": reverse_primer,
-                "reverse_start": reverse_start,
-                "reverse_template": reverse_template,
-                "reverse_end": reverse_end,
-            })
+                results.append({
+                    "gene": gene_info,
+                    "name": gene_name,
+                    "product_length": product_length,
+                    "forward_primer": forward_primer,
+                    "forward_start": forward_start,
+                    "forward_template": forward_template,
+                    "forward_end": forward_end,
+                    "reverse_primer": reverse_primer,
+                    "reverse_start": reverse_start,
+                    "reverse_template": reverse_template,
+                    "reverse_end": reverse_end,
+                })
+                print(results)
 
         return results

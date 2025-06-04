@@ -15,6 +15,12 @@ from pages.design_primer_API import NCBIdna, Primer3
 from utils.page_config import page_config
 
 
+ucsc_species = {
+    "Homo sapiens": {'org': 'Human', 'db': 'hg38', 'wp_target': ['genome', 'hg38KgSeqV48']},
+    "Mus musculus": {'org': 'Mouse', 'db': 'mm39', 'wp_target': ['genome', 'mm39KgSeqVM37']}
+}
+
+
 def is_valid_dna(seq):
     return all(base in "ATGCatgc" for base in seq)
 
@@ -97,6 +103,15 @@ if st.session_state.primers:
             st.session_state.primers.clear()
             st.success("All primers cleared.")
             st.rerun()
+
+    if st.button("Run"):
+        if species in ucsc_species.keys() and ucsc_validation is True:
+            org = ucsc_species[species]["org"]
+            db = ucsc_species[species]["db"]
+            wp_targets = ucsc_species[species]["wp_target"]
+            validation_relative, validation_absolute, sequence_relative, sequence_absolute = Primer3.fetch_ucsc_pcr_results(
+                species, org, db, wp_targets, left_seq, right_seq,
+                amplicon_size_abs, PRIMER_PRODUCT_SIZE_RANGE[1])
 
 else:
     st.info("No primers submitted yet.")

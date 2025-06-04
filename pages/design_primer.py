@@ -660,12 +660,17 @@ st.session_state['PRIMER_MAX_GC'] = col_settings2.number_input('Maximum primer G
                                                                max_value=100.0,
                                                                step=0.1)
 
+if 'reverse_exon_order' not in st.session_state:
+    st.session_state['reverse_exon_order'] = False
+
+col_settings3.markdown("")
+st.session_state['reverse_exon_order'] = col_settings3.toggle("Favor primers on 3'", False)
+
 if 'ucsc_validation' not in st.session_state:
     st.session_state["ucsc_validation"] = False
 if 'only_validated' not in st.session_state:
     st.session_state["only_validated"] = False
 
-col_settings3.markdown("")
 st.session_state["ucsc_validation"] = col_settings3.toggle("UCSC/NCBI primers PCR in-silico validation", False)
 if st.session_state["ucsc_validation"] is True:
     st.session_state["only_validated"] = col_settings3.radio("Display only validated", ["No", "qPCR", "Genome", "Both"],
@@ -706,7 +711,8 @@ if col2_button.button('🏃🏽‍♂️‍➡️ Run design primers'):
                                                  PRIMER_PRODUCT_SIZE_RANGE=[st.session_state["min_amplicon_size"],
                                                                             st.session_state["max_amplicon_size"]],
                                                  ucsc_validation=st.session_state["ucsc_validation"],
-                                                 only_validated=st.session_state["only_validated"])
+                                                 only_validated=st.session_state["only_validated"],
+                                                 reverse_exon_order=st.session_state['reverse_exon_order'])
 
                 if len(primers) > 0:
                     for idx, primer_set in enumerate(primers):
