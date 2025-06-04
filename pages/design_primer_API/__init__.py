@@ -495,8 +495,6 @@ class NCBIdna:
                 else:
                     sequence = dna_sequence
 
-                print(start, end)
-
                 # print(
                 #     bcolors.OKGREEN + f"Response 200: DNA sequence for {gene_name} extracted: {sequence}" + bcolors.ENDC)
                 return sequence
@@ -904,6 +902,7 @@ class Primer3:
                                                     continue
 
                                         primers.append({
+                                            'gene_name': variant + " " + gene_name,
                                             'left_primer': {
                                                 'sequence': left_seq,
                                                 'length': len(left_seq),
