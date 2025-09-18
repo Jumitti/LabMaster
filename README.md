@@ -1,5 +1,7 @@
 # [LabMaster](https://labmaster.streamlit.app/)
 
+[![Buy me a Coffee](https://img.shields.io/badge/Buy%20me%20a%20Coffee-☕-FFDD00?style=flat-square)](https://www.buymeacoffee.com/Jumitti)
+
 ## Overview
 
 LabMaster is designed to streamline and simplify the calculations essential for biological research. Our software currently offers tools for transfection calculations, sample preparation for Western blot analysis, reverse transcription calculations for RNA work, Venn diagram generation, and now includes a Restriction Enzymes tool. Here is a brief overview of the features:
