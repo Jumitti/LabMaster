@@ -14,7 +14,6 @@ from pages.design_primer_API import NCBIdna, Primer3
 
 from utils.page_config import page_config
 
-
 ucsc_species = [
     "None",
     "Homo sapiens",
@@ -129,6 +128,25 @@ ucsc_species = [
 ]
 
 
+def reset_defaults():
+    st.session_state["min_amplicon_size"] = 60
+    st.session_state["max_amplicon_size"] = 250
+
+    st.session_state['PRIMER_OPT_SIZE'] = 20
+    st.session_state['PRIMER_MIN_SIZE'] = 16
+    st.session_state['PRIMER_MAX_SIZE'] = 24
+
+    st.session_state['PRIMER_OPT_TM'] = 60.0
+    st.session_state['PRIMER_MIN_TM'] = 57.0
+    st.session_state['PRIMER_MAX_TM'] = 63.0
+
+    st.session_state['PRIMER_MIN_GC'] = 40.0
+    st.session_state['PRIMER_MAX_GC'] = 60.0
+
+    st.session_state["ucsc_validation"] = False
+    st.session_state["only_validated"] = False
+
+
 def parse_fasta_to_json(fasta_text):
     lines = fasta_text.strip().split("\n")
     variants = {}
@@ -206,22 +224,22 @@ def graphique(exons, primers, normalization=False):
                      'amplicon_size_abs': p['amplicon_size_abs'],
                      'label': f'Left {i + 1}', 'y': (i + 1) * 10}
                     for i, p in enumerate(primers)] + [
-        {'pair': f'Pair {i + 1}', 'type': 'Right Primer',
-         'sequence': p['right_primer']['sequence'],
-         'length': p['right_primer']['length'],
-         'position': f"{p['right_primer']['position'][0]}-{p['right_primer']['position'][1]}",
-         'position_start': p['right_primer']['position'][0],
-         'position_end': p['right_primer']['position'][1],
-         'position_abs': f"{p['right_primer']['position_abs'][0]}-{p['right_primer']['position_abs'][1]}",
-         'position_start_abs': p['right_primer']['position_abs'][0],
-         'position_end_abs': p['right_primer']['position_abs'][1],
-         'tm': p['right_primer']['tm'],
-         'self_complementarity': p['right_primer']['self_complementarity'],
-         "self_3prime_complementarity": p['right_primer']['self_3prime_complementarity'],
-         'amplicon_size': p['amplicon_size'],
-         'amplicon_size_abs': p['amplicon_size_abs'],
-         'label': f'Right {i + 1}', 'y': (i + 1) * 10}
-        for i, p in enumerate(primers)]
+                       {'pair': f'Pair {i + 1}', 'type': 'Right Primer',
+                        'sequence': p['right_primer']['sequence'],
+                        'length': p['right_primer']['length'],
+                        'position': f"{p['right_primer']['position'][0]}-{p['right_primer']['position'][1]}",
+                        'position_start': p['right_primer']['position'][0],
+                        'position_end': p['right_primer']['position'][1],
+                        'position_abs': f"{p['right_primer']['position_abs'][0]}-{p['right_primer']['position_abs'][1]}",
+                        'position_start_abs': p['right_primer']['position_abs'][0],
+                        'position_end_abs': p['right_primer']['position_abs'][1],
+                        'tm': p['right_primer']['tm'],
+                        'self_complementarity': p['right_primer']['self_complementarity'],
+                        "self_3prime_complementarity": p['right_primer']['self_3prime_complementarity'],
+                        'amplicon_size': p['amplicon_size'],
+                        'amplicon_size_abs': p['amplicon_size_abs'],
+                        'label': f'Right {i + 1}', 'y': (i + 1) * 10}
+                       for i, p in enumerate(primers)]
 
     primers_data = pd.DataFrame(primers_data)
 
@@ -249,7 +267,8 @@ def graphique(exons, primers, normalization=False):
         y=alt.Y('y:Q', title=None),
         color=alt.Color('pair:N', scale=alt.Scale(domain=[f'Pair {i + 1}' for i in range(len(primers))]),
                         title='Primers pairs'),
-        tooltip=['pair', 'label', 'sequence', 'tm', 'length', 'position', 'self_complementarity', "self_3prime_complementarity", 'amplicon_size', 'position_abs', 'amplicon_size_abs'],
+        tooltip=['pair', 'label', 'sequence', 'tm', 'length', 'position', 'self_complementarity',
+                 "self_3prime_complementarity", 'amplicon_size', 'position_abs', 'amplicon_size_abs'],
     )
 
     annotations_left = alt.Chart(primers_data).mark_text(
@@ -283,12 +302,16 @@ def graphique(exons, primers, normalization=False):
 # Page config
 page_config()
 
+if st.button("You can also check your own primers by clicking here ☺"):
+    st.switch_page("pages/check_primer.py")
+
+st.divider()
+
 st.subheader('Genes info extraction')
 colextract1, colextract2, colextract3 = st.columns([0.5, 1.5, 1.5], gap="small")
 
 # Extraction of DNA sequence
 with colextract1:
-
     all_variants = {}
     upstream_entry = []
 
@@ -328,7 +351,8 @@ with colextract2:
                         for i, gene_id in enumerate(gene_ids):
                             pbar.progress(i / len(gene_ids),
                                           text=f'**:blue[Extract info... {gene_id}] ⚠️:red[PLEASE WAIT UNTIL END WITHOUT CHANGING ANYTHING]**')
-                            all_variants_output, message = NCBIdna(gene_id, species, all_slice_forms=True if all_slice_form else False).find_sequences()
+                            all_variants_output, message = NCBIdna(gene_id, species,
+                                                                   all_slice_forms=True if all_slice_form else False).find_sequences()
                             if "Error 200" not in all_variants_output:
                                 pbar.progress((i + 1) / len(gene_ids),
 
@@ -481,7 +505,7 @@ with colextract2:
 with colextract3:
     default_fasta = """>ExampleGene1 | Homo sapiens\ntacgcaatgtcatgactgcgtttatagatagataaaaagcgtgcgattactaaacgcggatggcgtgcgcactatttcatcggttctgaaatctccatccaatcaaccttactcagacagctcccccgtgacacgggctaccacattcaggtggcttgtaatacatgggtataacatcaatagttcgtgccgcaatacttcgcgggggtacgggtaagtgacgaaagaagtaactctcccactcggagaatctacggtagttgcgcgtttttaattttcatctttgtcctgccagcaatgtacacaccgcaaagtctgtccaagtgcatgctagaccgggtgtgcaccctagggtagagcacggagttgatttcgggcgtgagatcaaggccaaggaggaagtaagcatcgtatctctgtctaatcattgcaggaagggtgcacagcttaggttccccaacaatgcttttagcatgatagctgtctctttgtggactgta\n>ExampleGene2\nttcctctttcaccagctttccatccccgcgacatggcggatcaaaactctggcaaagattaccagtcgaaggcatctcgagatggagatggtaagtttttgtcatacgacccaaacccggaggagacacgttagaaaatccacgacttcttcgaagactaagtggatgagtacaggtcgggaagagtcgactaccctaggatcccgcgtgcggtctacatgtcatgatcctccatgggcccaggccccgtagtgcgactgcggttaattgcatctacgaattttacacttgcgtttaagaccggacgccgggtttctaagtaaaagtttggctatcgacattatttttttaggggcaccgtatcggattccaatgggtggctggattctcagtgaatctccgtagttcgggaaatcactcaggaatgctaatcatccagaatggaaacgtggtaaaagactgccctgcttccctcttttacctcaagaaacaggggcggg"""
 
-    st.markdown('**🔹 :blue[Alternative 1.1]** Enter a DNA sequence in FASTA format (required):',)
+    st.markdown('**🔹 :blue[Alternative 1.1]** Enter a DNA sequence in FASTA format (required):', )
     with st.expander("📌 How to write a FASTA file:"):
         st.markdown("Each entry should follow this structure:")
 
@@ -510,8 +534,8 @@ with colextract3:
             st.error("Please provide a valid FASTA sequence.")
 
 st.markdown("🔹 :blue[**Sequences added**]")
-st.markdown("You can change the species if necessary for the validation of primers via UCSC PCR in-Silico. Use 'None' if species isn't known")
-
+st.markdown(
+    "You can change the species if necessary for the validation of primers via UCSC PCR in-Silico. Use 'None' if species isn't known")
 
 if 'all_variants' not in st.session_state:
     st.session_state['all_variants'] = {}
@@ -541,112 +565,267 @@ if st.session_state['all_variants']:
 
     updated_json = df.set_index("N°/Name").to_dict(orient="index")
     st.json(updated_json, expanded=False)
-    current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    st.download_button(
-        label="💾 Download (.json)",
-        data=json.dumps(updated_json, indent=4),
-        file_name=f"Sequences_{current_date_time}.json",
-        mime="application/json"
-    )
+    # current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    # st.download_button(
+    #     label="💾 Download (.json)",
+    #     data=json.dumps(updated_json, indent=4),
+    #     file_name=f"Sequences_{current_date_time}.json",
+    #     mime="application/json"
+    # )
 else:
     st.warning('You have not extracted any information')
 
+st.divider()
+
+st.subheader('Primers settings')
+
+col_settings1, col_settings2, col_settings3 = st.columns(3, gap="small")
+
 if "min_amplicon_size" not in st.session_state:
-    st.session_state["min_amplicon_size"] = 80
+    st.session_state["min_amplicon_size"] = 60
 if "max_amplicon_size" not in st.session_state:
     st.session_state["max_amplicon_size"] = 250
 
+PRIMER_NUM_RETURN = col_settings1.number_input('Number of primers', value=10, min_value=1, step=1)
+st.session_state["min_amplicon_size"] = col_settings2.number_input('Minimum amplicon size (bp)',
+                                                                   value=st.session_state["min_amplicon_size"],
+                                                                   min_value=10,
+                                                                   max_value=st.session_state["max_amplicon_size"] - 10,
+                                                                   step=1)
 
-nb_primers = st.number_input('Number of primers', value=10, min_value=1, step=1)
-st.session_state["min_amplicon_size"] = st.number_input('Minimum amplicon size', value=60, min_value=10,
-                                                        max_value=st.session_state["max_amplicon_size"] - 10, step=1)
+st.session_state["max_amplicon_size"] = col_settings3.number_input('Maximum amplicon size (bp)',
+                                                                   value=st.session_state["max_amplicon_size"],
+                                                                   min_value=st.session_state["min_amplicon_size"] + 10,
+                                                                   step=1)
 
-st.session_state["max_amplicon_size"] = st.number_input('Maximum amplicon size', value=250,
-                                                        min_value=st.session_state["min_amplicon_size"] + 10, step=1)
+if 'PRIMER_OPT_SIZE' not in st.session_state:
+    st.session_state['PRIMER_OPT_SIZE'] = 20
+if 'PRIMER_MIN_SIZE' not in st.session_state:
+    st.session_state['PRIMER_MIN_SIZE'] = 16
+if 'PRIMER_MAX_SIZE' not in st.session_state:
+    st.session_state['PRIMER_MAX_SIZE'] = 24
+
+st.session_state["PRIMER_MIN_SIZE"] = col_settings1.number_input('Minimum primer size (bp)',
+                                                                 value=st.session_state["PRIMER_MIN_SIZE"],
+                                                                 min_value=5,
+                                                                 max_value=st.session_state["PRIMER_OPT_SIZE"],
+                                                                 step=1, )
+
+st.session_state["PRIMER_OPT_SIZE"] = col_settings2.number_input('Optimal primer size (bp)',
+                                                                 value=st.session_state["PRIMER_OPT_SIZE"],
+                                                                 min_value=st.session_state["PRIMER_MIN_SIZE"],
+                                                                 max_value=st.session_state["PRIMER_MAX_SIZE"],
+                                                                 step=1, )
+
+st.session_state["PRIMER_MAX_SIZE"] = col_settings3.number_input('Maximum primer size (bp)',
+                                                                 value=st.session_state["PRIMER_MAX_SIZE"],
+                                                                 min_value=st.session_state["PRIMER_OPT_SIZE"],
+                                                                 step=1, )
+
+if 'PRIMER_OPT_TM' not in st.session_state:
+    st.session_state['PRIMER_OPT_TM'] = 60.0
+if 'PRIMER_MIN_TM' not in st.session_state:
+    st.session_state['PRIMER_MIN_TM'] = 57.0
+if 'PRIMER_MAX_TM' not in st.session_state:
+    st.session_state['PRIMER_MAX_TM'] = 63.0
+
+st.session_state['PRIMER_MIN_TM'] = col_settings1.number_input("Minimum primer Tm (°C)",
+                                                               value=st.session_state["PRIMER_MIN_TM"],
+                                                               min_value=5.0,
+                                                               max_value=st.session_state["PRIMER_OPT_TM"], step=0.1)
+
+st.session_state['PRIMER_OPT_TM'] = col_settings2.number_input('Optimal primer Tm (°C)',
+                                                               value=st.session_state["PRIMER_OPT_TM"],
+                                                               min_value=st.session_state["PRIMER_MIN_TM"],
+                                                               max_value=st.session_state["PRIMER_MAX_TM"], step=0.1)
+
+st.session_state['PRIMER_MAX_TM'] = col_settings3.number_input('Maximum primer Tm (°C)',
+                                                               value=st.session_state["PRIMER_MAX_TM"],
+                                                               min_value=st.session_state["PRIMER_OPT_TM"], step=0.1)
+
+if 'PRIMER_MIN_GC' not in st.session_state:
+    st.session_state['PRIMER_MIN_GC'] = 40.0
+if 'PRIMER_MAX_GC' not in st.session_state:
+    st.session_state['PRIMER_MAX_GC'] = 60.0
+
+st.session_state['PRIMER_MIN_GC'] = col_settings1.number_input('Minimum primer GC (%)',
+                                                               value=st.session_state["PRIMER_MIN_GC"],
+                                                               min_value=0.0,
+                                                               max_value=st.session_state["PRIMER_MAX_GC"],
+                                                               step=0.1)
+st.session_state['PRIMER_MAX_GC'] = col_settings2.number_input('Maximum primer GC (%)',
+                                                               value=st.session_state["PRIMER_MAX_GC"],
+                                                               min_value=st.session_state["PRIMER_MIN_GC"],
+                                                               max_value=100.0,
+                                                               step=0.1)
+
+if 'reverse_exon_order' not in st.session_state:
+    st.session_state['reverse_exon_order'] = False
+
+col_settings3.markdown("")
+st.session_state['reverse_exon_order'] = col_settings3.toggle("Favor primers on 3'", False)
 
 if 'ucsc_validation' not in st.session_state:
     st.session_state["ucsc_validation"] = False
 if 'only_validated' not in st.session_state:
     st.session_state["only_validated"] = False
 
-st.session_state["ucsc_validation"] = st.toggle("UCSC validation", False)
+st.session_state["ucsc_validation"] = col_settings3.toggle("UCSC/NCBI primers PCR in-silico validation", False)
 if st.session_state["ucsc_validation"] is True:
-    st.session_state["only_validated"] = st.toggle("Display only validated", False)
+    st.session_state["only_validated"] = col_settings3.radio("Display only validated", ["No", "qPCR", "Genome", "Both"],
+                                                             horizontal=True)
 
+st.divider()
+col1_button, col2_button = st.columns(2, gap="small")
+# Reset button
+if col1_button.button("🔄 Reset defaults"):
+    reset_defaults()
+    st.rerun()
 
-if st.button('Run design primers'):
+if 'primers' not in st.session_state:
+    st.session_state['primers'] = None
+
+primers_result = []
+
+if col2_button.button('🏃🏽‍♂️‍➡️ Run design primers',
+                      disabled=True if len(st.session_state['all_variants']) < 0 else False):
     try:
-        primers_result = []
+        total_primers_expected = len(st.session_state['all_variants']) * PRIMER_NUM_RETURN
+        progress_bar = stqdm(total=total_primers_expected, desc="Initializing")
 
-        if len(st.session_state['all_variants']) > 0:
-            progress_bar = stqdm(enumerate(st.session_state['all_variants'].items()),
-                                 total=len(st.session_state['all_variants']),
-                                 desc="Initializing")
-            for i, (variant, data) in progress_bar:
-                progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
+        for variant, data in st.session_state['all_variants'].items():
+            progress_bar.set_description(f"Designing primers for {variant} - {data['gene_name']}")
 
-                primers = NCBIdna.design_primers(variant, data['gene_name'], data['species'], data['sequence'], data['normalized_exon_coords'], nb_primers, [st.session_state["min_amplicon_size"], st.session_state["max_amplicon_size"]], st.session_state["ucsc_validation"], st.session_state["only_validated"])
+            st.session_state['primers'] = Primer3.design_primers(variant=variant,
+                                                                 gene_name=data['gene_name'],
+                                                                 species=data['species'],
+                                                                 sequence=data['sequence'],
+                                                                 exons=data['normalized_exon_coords'],
+                                                                 PRIMER_OPT_SIZE=st.session_state["PRIMER_OPT_SIZE"],
+                                                                 PRIMER_MIN_SIZE=st.session_state["PRIMER_MIN_SIZE"],
+                                                                 PRIMER_MAX_SIZE=st.session_state["PRIMER_MAX_SIZE"],
+                                                                 PRIMER_OPT_TM=st.session_state["PRIMER_OPT_TM"],
+                                                                 PRIMER_MIN_TM=st.session_state["PRIMER_MIN_TM"],
+                                                                 PRIMER_MAX_TM=st.session_state["PRIMER_MAX_TM"],
+                                                                 PRIMER_MIN_GC=st.session_state["PRIMER_MIN_GC"],
+                                                                 PRIMER_MAX_GC=st.session_state["PRIMER_MAX_GC"],
+                                                                 PRIMER_NUM_RETURN=PRIMER_NUM_RETURN,
+                                                                 PRIMER_PRODUCT_SIZE_RANGE=[
+                                                                     st.session_state["min_amplicon_size"],
+                                                                     st.session_state["max_amplicon_size"]],
+                                                                 ucsc_validation=st.session_state["ucsc_validation"],
+                                                                 only_validated=st.session_state["only_validated"],
+                                                                 reverse_exon_order=st.session_state[
+                                                                     'reverse_exon_order'],
+                                                                 progress_bar=progress_bar)
 
-                if len(primers) > 0:
-                    for idx, primer_set in enumerate(primers):
-                        primers_result.append({
-                            'Gene': str(variant) + data['gene_name'],
-                            'Pair': idx + 1,
-                            'Product Size (bp)': primer_set['amplicon_size'],
-                            'Validated': primer_set['validation_relative'],
-                            "For. Pr.(5'->3')": primer_set['left_primer']['sequence'],
-                            'For. Len. (bp)': primer_set['left_primer']['length'],
-                            'For. Pos.': primer_set['left_primer']['position'],
-                            'For. Pos. Abs. (bp)': primer_set['left_primer']['position_abs'],
-                            'For. Tm (°C)': primer_set['left_primer']['tm'],
-                            'For. GC%': primer_set['left_primer']['gc_percent'],
-                            'For. Self Compl.': primer_set['left_primer']['self_complementarity'],
-                            "For. Self 3' Compl.": primer_set['left_primer']['self_3prime_complementarity'],
-                            "Rev. Pr.(5'->3')": primer_set['right_primer']['sequence'],
-                            'Rev. Len. (bp)': primer_set['right_primer']['length'],
-                            'Rev. Pos.': primer_set['right_primer']['position'],
-                            'Rev. Pos. Abs.': primer_set['right_primer']['position_abs'],
-                            'Rev. Tm (°C)': primer_set['right_primer']['tm'],
-                            'Rev. GC%': primer_set['right_primer']['gc_percent'],
-                            'Rev. Self Compl.': primer_set['right_primer']['self_complementarity'],
-                            "Rev. Self 3' Compl.": primer_set['right_primer']['self_3prime_complementarity'],
-                            'Product Size Abs. (bp)': primer_set['amplicon_size_abs'],
-                            'Validated Abs.': primer_set['validation_absolute'],
-                        })
+            if len(st.session_state['primers']) > 0:
+                for idx, primer_set in enumerate(st.session_state['primers']):
+                    primers_result.append({
+                        'Gene': str(variant) + data['gene_name'],
+                        'Pair': idx + 1,
+                        'Product Size (bp)': primer_set['amplicon_size'],
+                        'Product Tm (°C)': primer_set['amplicon_tm'],
+                        "Product Seq. (5'->3')": primer_set['amplicon_seq'],
+                        'Validated': primer_set['validation_relative'],
+                        "For. Pr.(5'->3')": primer_set['left_primer']['sequence'],
+                        'For. Len. (bp)': primer_set['left_primer']['length'],
+                        'For. Pos.': primer_set['left_primer']['position'],
+                        'For. Pos. Abs. (bp)': primer_set['left_primer']['position_abs'],
+                        'For. Tm (°C)': primer_set['left_primer']['tm'],
+                        'For. GC%': primer_set['left_primer']['gc_percent'],
+                        'For. Self Compl.': primer_set['left_primer']['self_complementarity'],
+                        "For. Self 3' Compl.": primer_set['left_primer']['self_3prime_complementarity'],
+                        "Rev. Pr.(5'->3')": primer_set['right_primer']['sequence'],
+                        'Rev. Len. (bp)': primer_set['right_primer']['length'],
+                        'Rev. Pos.': primer_set['right_primer']['position'],
+                        'Rev. Pos. Abs.': primer_set['right_primer']['position_abs'],
+                        'Rev. Tm (°C)': primer_set['right_primer']['tm'],
+                        'Rev. GC%': primer_set['right_primer']['gc_percent'],
+                        'Rev. Self Compl.': primer_set['right_primer']['self_complementarity'],
+                        "Rev. Self 3' Compl.": primer_set['right_primer']['self_3prime_complementarity'],
+                        'Product Size Abs. (bp)': primer_set['amplicon_size_abs'],
+                        'Validated Abs.': primer_set['validation_absolute'],
+                        'validation_relative_sequences': primer_set['validation_relative_sequences'],
+                    })
 
-                    with st.expander(f'Primers graph location for {variant} {data["gene_name"]}', expanded=False):
-                        if len(data['normalized_exon_coords']) > 1:
-                            st.altair_chart(graphique(data['normalized_exon_coords'], primers), theme=None,
-                                            use_container_width=True,
-                                            key=f"{variant}_exon_intron")
-                        st.altair_chart(graphique(data['normalized_exon_coords'], primers, True), theme=None,
-                                        use_container_width=True, key=f"{variant}_exon")
+                with st.expander(f'Primers info and graph location for {variant} {data["gene_name"]}',
+                                 expanded=False):
+                    if len(data['normalized_exon_coords']) > 1:
+                        st.altair_chart(graphique(data['normalized_exon_coords'], st.session_state['primers']),
+                                        theme=None, use_container_width=True, key=f"{variant}_exon_intron")
+                    st.altair_chart(graphique(data['normalized_exon_coords'], st.session_state['primers'],
+                                              True), theme=None, use_container_width=True,
+                                    key=f"{variant}_exon")
 
-                    st.toast(f"Primers designed for {variant} {data['gene_name']}!")
-                else:
-                    st.warning(f"No primers were designed for {variant} {data['gene_name']}")
+                    for idx, primer_set in enumerate(st.session_state['primers']):
+                        st.markdown("---")
+                        st.subheader(f"Primer set {idx + 1} for {variant} {data['gene_name']}")
+                        col1, col2 = st.columns(2)
+                        with col1:
+                            st.subheader("Forward primer")
+                            st.markdown(f"**Sequence:** `{primer_set['left_primer']['sequence']}`")
+                            st.markdown(f"**Length:** {primer_set['left_primer']['length']} bp")
+                            st.markdown(f"**Tm:** {primer_set['left_primer']['tm']} °C")
+                            st.markdown(f"**GC%:** {primer_set['left_primer']['gc_percent']}")
+                            st.markdown(f"**Self-compl.:** {primer_set['left_primer']['self_complementarity']}")
+                            st.markdown(
+                                f"**3'-compl.:** {primer_set['left_primer']['self_3prime_complementarity']}")
+                        with col2:
+                            st.subheader("Reverse primer")
+                            st.markdown(f"**Sequence:** `{primer_set['right_primer']['sequence']}`")
+                            st.markdown(f"**Length:** {primer_set['right_primer']['length']} bp")
+                            st.markdown(f"**Tm:** {primer_set['right_primer']['tm']} °C")
+                            st.markdown(f"**GC%:** {primer_set['right_primer']['gc_percent']}")
+                            st.markdown(f"**Self-compl.:** {primer_set['right_primer']['self_complementarity']}")
+                            st.markdown(
+                                f"**3'-compl.:** {primer_set['right_primer']['self_3prime_complementarity']}")
+                        st.markdown("")
+                        st.markdown(f"**Product Size (bp):** {primer_set['amplicon_size']} bp")
+                        st.markdown(f"**Product Tm (°C):** {primer_set['amplicon_tm']}°C")
+                        st.markdown(f"**Product sequence:** `{primer_set['amplicon_seq']}`")
+                        if st.session_state["ucsc_validation"] is True:
+                            validation_status = primer_set['validation_relative']
+                            color = "green" if validation_status is True else "red"
+                            validation_text = "Yes" if validation_status is True else (
+                                "No" if validation_status is False else str(validation_status)
+                            )
 
-            if primers_result:
-                all_columns = list(primers_result[0].keys())
-                abs_columns = [col for col in all_columns if "Abs." in col]
-                other_columns = [col for col in all_columns if col not in abs_columns]
-                ordered_columns = other_columns + abs_columns
-                df = pd.DataFrame(primers_result)[ordered_columns]
-                st.dataframe(df, hide_index=True)
+                            st.markdown(f"**Validated:** <span style='color:{color}'>{validation_text}</span>",
+                                        unsafe_allow_html=True)
 
-                csv_file = pd.DataFrame(primers_result).to_csv(index=False)
-                excel_file = io.BytesIO()
-                pd.DataFrame(primers_result).to_excel(excel_file, index=False, sheet_name='Sheet1')
-                excel_file.seek(0)
+                            st.write(primer_set['validation_relative_sequences'])
 
-                download_button1, download_button2 = st.columns(2, gap='small')
-                current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                download_button1.download_button("💾 Download table (.xlsx)", excel_file,
-                                   file_name=f'LabmasterDP_{current_date_time}.xlsx',
-                                   mime="application/vnd.ms-excel", key='download-excel')
-                download_button2.download_button(label="💾 Download table (.csv)", data=csv_file,
-                                   file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
+                st.toast(f"Primers designed for {variant} {data['gene_name']}!")
+            else:
+                st.warning(f"No primers were designed for {variant} {data['gene_name']}")
+
+        if primers_result:
+            all_columns = list(primers_result[0].keys())
+            if not st.session_state.get("ucsc_validation", False):
+                all_columns = [col for col in all_columns if col != "Validated"]
+                all_columns = [col for col in all_columns if col != "Validated Abs."]
+            all_columns = [col for col in all_columns if col != "validation_relative_sequences"]
+            abs_columns = [col for col in all_columns if "Abs." in col]
+            other_columns = [col for col in all_columns if col not in abs_columns]
+            ordered_columns = other_columns + abs_columns
+            df = pd.DataFrame(primers_result)[ordered_columns]
+            st.dataframe(df, hide_index=True)
+
+            csv_file = pd.DataFrame(primers_result).to_csv(index=False)
+            excel_file = io.BytesIO()
+            pd.DataFrame(primers_result).to_excel(excel_file, index=False, sheet_name='Sheet1')
+            excel_file.seek(0)
+
+            download_button1, download_button2 = st.columns(2, gap='small')
+            current_date_time = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            download_button1.download_button("💾 Download table (.xlsx)", excel_file,
+                                             file_name=f'LabmasterDP_{current_date_time}.xlsx',
+                                             mime="application/vnd.ms-excel", key='download-excel')
+            download_button2.download_button(label="💾 Download table (.csv)", data=csv_file,
+                                             file_name=f"LabmasterDP_{current_date_time}.csv", mime="text/csv")
     except Exception as e:
         print(e)
 
-
+if st.button("You can also check your own primers by clicking here ☺", key="second"):
+    st.switch_page("pages/check_primer.py")
