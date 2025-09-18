@@ -174,10 +174,14 @@ class NCBIdna:
         self.all_slice_forms = True if all_slice_forms is True else False
 
     @staticmethod
-    def XMNM_to_gene_ID(variant):
+    def XMNM_to_gene_ID(variant, max_attempts=25):
         global headers
 
-        while True:
+        attempt = 0
+
+        while attempt < max_attempts:
+            attempt += 1
+
             uids = f"https://www.ncbi.nlm.nih.gov/nuccore/{variant}"
 
             response = requests.get(uids, headers=headers)
@@ -197,16 +201,18 @@ class NCBIdna:
             else:
                 print(bcolors.FAIL + "Error during process of retrieving UIDs" + bcolors.ENDC)
 
+        return "UIDs not founds"
+
     # Sequence extractor
     def find_sequences(self):
         time.sleep(1)
         if self.gene_id.upper().startswith(('XM_', 'NM_', 'XR_', 'NR_', 'YP_')):
             if '.' in self.gene_id:
                 self.gene_id = self.gene_id.split('.')[0]
-            entrez_id = NCBIdna.XMNM_to_gene_ID(self.gene_id)
+            entrez_id = NCBIdna.XMNM_to_gene_ID(str(self.gene_id))
             if entrez_id == 'UIDs not founds':
                 result_promoter = f'Please verify {self.gene_id} variant'
-                return result_promoter, result_promoter
+                return "Error 200", result_promoter
         else:
             if self.gene_id.isdigit():
                 entrez_id = self.gene_id
@@ -1005,7 +1011,6 @@ class Primer3:
                     "wp_target": wp_target,
                     "wp_f": wp_f,
                     "wp_r": wp_r,
-                    "Submit": "Submit",
                     "wp_size": amplicon_size * 2,
                     "wp_perfect": 15,
                     "wp_good": 15,
@@ -1014,7 +1019,7 @@ class Primer3:
                     "boolshad.wp_append": 0,
                 }
 
-                response = requests.get(base_url, params=params)
+                response = requests.get(base_url, params=params, headers=headers)
 
                 if response.status_code != 200:
                     if wp_target == "genome":
@@ -1024,6 +1029,7 @@ class Primer3:
                     continue
 
                 soup = BeautifulSoup(response.text, "html.parser")
+                print(soup)
                 result_section = soup.find("pre")
 
                 parsed_results = []
