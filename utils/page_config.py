@@ -36,6 +36,7 @@ def page_config(logo=None, tool_expanded=None, hide_licence=None):
     st.sidebar.page_link("labmaster.py", label="**Home**", icon="🏠")
     with st.sidebar.expander("Tools", expanded=True if tool_expanded is not False else False):
         st.page_link("pages/check_primer.py", label="Check Primers")
+        st.page_link("pages/circular_connection.py", label="Circular connection")
         st.page_link("pages/design_primer.py", label="Design Primers")
         st.page_link("pages/cohen_s_d.py", label="Effect size")
         st.page_link("pages/nucleotide_frequency.py", label="Nucleotide Frequency")
