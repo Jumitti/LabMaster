@@ -174,7 +174,7 @@ if st.session_state["elements"]:
     for (el, (x, y)), c in zip(positions.items(), colors):
         width = height = 1.0 * node_size
 
-        if shape_option == "Cercle":
+        if shape_option == "Circle":
             ax.scatter(x, y, s=1200 * node_size, color=c, edgecolors="black", zorder=3)
         else:
             rect = mpatches.FancyBboxPatch(
