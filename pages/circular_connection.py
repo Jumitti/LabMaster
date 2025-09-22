@@ -158,6 +158,9 @@ if st.session_state["elements"]:
     positions = {el: (radius*np.cos(t), radius*np.sin(t)) for el, t in zip(elements, theta)}
 
     fig, ax = plt.subplots(figsize=(7, 7), dpi=300)
+
+    fig.patch.set_alpha(0)
+    ax.patch.set_alpha(0)
     ax.set_aspect("equal")
     ax.axis("off")
 
@@ -205,7 +208,7 @@ if st.session_state["elements"]:
     st.pyplot(fig)
 
     buffer = BytesIO()
-    fig.savefig(buffer, format="png", bbox_inches="tight", dpi=300)
+    fig.savefig(buffer, format="png", bbox_inches="tight", dpi=300, transparent=True)
     buffer.seek(0)
 
     st.download_button(
